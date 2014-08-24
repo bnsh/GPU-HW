@@ -1,7 +1,7 @@
 
 #include    <wb.h>
 
-#define TILEWIDTH (16)
+const int TILEWIDTH = 16;
 #define wbCheck(stmt) do {                                                    \
         cudaError_t err = stmt;                                               \
         if (err != cudaSuccess) {                                             \
@@ -20,6 +20,13 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 	//@@ You have to use shared memory for this MP
 	__shared__ float mA[TILEWIDTH][TILEWIDTH];
 	__shared__ float mB[TILEWIDTH][TILEWIDTH];
+
+	int r = blockIdx.y * blockDim.y + threadIdx.y;
+	int c = blockIdx.x * blockDim.x + threadIdx.x;
+	int idx = r * numCColumns + c;
+
+	for (int i = 0; i < numAColumns; ++i) {
+	}
 }
 
 int main(int argc, char ** argv) {
