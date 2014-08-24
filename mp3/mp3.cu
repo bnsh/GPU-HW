@@ -1,6 +1,7 @@
 
 #include    <wb.h>
 
+#define TILEWIDTH (16)
 #define wbCheck(stmt) do {                                                    \
         cudaError_t err = stmt;                                               \
         if (err != cudaSuccess) {                                             \
@@ -15,8 +16,10 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 			             int numARows, int numAColumns,
 			             int numBRows, int numBColumns,
 			             int numCRows, int numCColumns) {
-    //@@ Insert code to implement matrix multiplication here
-    //@@ You have to use shared memory for this MP
+	//@@ Insert code to implement matrix multiplication here
+	//@@ You have to use shared memory for this MP
+	__shared__ float mA[TILEWIDTH][TILEWIDTH];
+	__shared__ float mB[TILEWIDTH][TILEWIDTH];
 }
 
 int main(int argc, char ** argv) {
@@ -43,6 +46,7 @@ int main(int argc, char ** argv) {
     numCRows = numARows;
     numCColumns = numBColumns;
     //@@ Allocate the hostC matrix
+    hostC = (float *)(malloc(sizeof(float) * numCRows * numCColumns));
     wbTime_stop(Generic, "Importing data and creating memory on host");
 
     wbLog(TRACE, "The dimensions of A are ", numARows, " x ", numAColumns);
@@ -64,7 +68,7 @@ int main(int argc, char ** argv) {
     wbTime_stop(GPU, "Copying input memory to the GPU.");
     
     //@@ Initialize the grid and block dimensions here
-    dim3 blocksz(32,32,1);
+    dim3 blocksz(TILEWIDTH,TILEWIDTH,1);
     dim3 gridsz(((numCRows-1)/blocksz.x)+1,((numCColumns-1)/blocksz.y)+1,1);
     
     wbTime_start(Compute, "Performing CUDA computation");
@@ -93,9 +97,9 @@ int main(int argc, char ** argv) {
 
     wbSolution(args, hostC, numCRows, numCColumns);
 
-    free(hostA); hostA = null;
-    free(hostB); hostB = null;
-    free(hostC); hostC = null;
+    free(hostA); hostA = NULL;
+    free(hostB); hostB = NULL;
+    free(hostC); hostC = NULL;
 
     return 0;
 }
