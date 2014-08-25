@@ -2,7 +2,7 @@
 #include    <wb.h>
 #include "cuPrintf.cu"
 
-#define TILE_WIDTH (8)
+#define TILE_WIDTH (16)
 #define wbCheck(stmt) do {                                                    \
         cudaError_t err = stmt;                                               \
         if (err != cudaSuccess) {                                             \
@@ -22,6 +22,10 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 	__shared__ float Atile[TILE_WIDTH][TILE_WIDTH];
 	__shared__ float Btile[TILE_WIDTH][TILE_WIDTH];
 
+	cuPrintf("A = %dx%d B=%dx%d C=%dx%d\n",
+		numARows, numAColumns,
+		numBRows, numBColumns,
+		numCRows, numCColumns);
 	int Ar = blockIdx.y * blockDim.y;
 	int Bc = blockIdx.x * blockDim.x;
 
