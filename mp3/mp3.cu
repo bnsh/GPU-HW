@@ -2,7 +2,7 @@
 #include    <wb.h>
 #include "cuPrintf.cu"
 
-const int TILE_WIDTH = 16;
+#define TILE_WIDTH (8)
 #define wbCheck(stmt) do {                                                    \
         cudaError_t err = stmt;                                               \
         if (err != cudaSuccess) {                                             \
@@ -74,6 +74,7 @@ int main(int argc, char ** argv) {
 
     wbLog(TRACE, "The dimensions of A are ", numARows, " x ", numAColumns);
     wbLog(TRACE, "The dimensions of B are ", numBRows, " x ", numBColumns);
+    wbLog(TRACE, "The dimensions of C are ", numCRows, " x ", numCColumns);
 
     wbTime_start(GPU, "Allocating GPU memory.");
     //@@ Allocate GPU memory here
@@ -97,7 +98,7 @@ int main(int argc, char ** argv) {
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
     cudaPrintfInit();
-    matrixMultiplyShared<<<gridsz, blocksz, 256*sizeof(float)>>>(deviceA, deviceB, deviceC,
+    matrixMultiplyShared<<<gridsz, blocksz>>>(deviceA, deviceB, deviceC,
         numARows, numAColumns,
         numBRows, numBColumns,
         numCRows, numCColumns);
