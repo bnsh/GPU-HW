@@ -40,7 +40,7 @@ uint64_t _hrtime(void) {
 #undef O_NANOSEC
 #undef O_GIGA
 #else /* __APPLE__ */
-  clock_gettime(CLOCK_MONOTONIC, &ts);
+  clock_gettime(CLOCK_REALTIME, &ts);
 #endif /* __APPLE__ */
   return (((uint64_t) ts.tv_sec) * NANOSEC + ts.tv_nsec);
 #endif /* _MSC_VER */
