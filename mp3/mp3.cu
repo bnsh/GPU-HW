@@ -25,8 +25,14 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 	int c = blockIdx.x * blockDim.x + threadIdx.x;
 	int idx = r * numCColumns + c;
 
-	for (int i = 0; i < numAColumns; ++i) {
+	float tot = 0.0;
+	for (int tile = 0; tile < numAColumns/TILEWIDTH; ++tile) {
+		mA[threadIdx.y][threadIdx.x] = A[r*numAColumns + i];
+		mB[threadIdx.y][threadIdx.x] = B[i*numAColumns + c];
+		__syncthreads();
+		// tot += A[r*numAColumns + i] * B[i*numBColumns + c];
 	}
+	C[idx] = tot;
 }
 
 int main(int argc, char ** argv) {
