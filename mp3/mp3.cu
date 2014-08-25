@@ -38,15 +38,6 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 		for (int i = 0; i < TILE_WIDTH; ++i) {
 			// Interesting. An array out of bounds _READ_ causes memory faults.
 			Cvalue += Atile[threadIdx.y * TILE_WIDTH + i] * Btile[i * TILE_WIDTH + threadIdx.x];
-			if ((threadIdx.y == 5) && (threadIdx.x == 0))
-			cuPrintf("A[%d][%d] * B[%d][%d] = %.7f * %.7f = %.7f (%.7f)\n",
-				Ar+threadIdx.y,Ac+i,
-				Br+i,Bc+threadIdx.x,
-				Atile[threadIdx.y * TILE_WIDTH + i],
-				Btile[i * TILE_WIDTH + threadIdx.x],
-				Atile[threadIdx.y * TILE_WIDTH + i] * Btile[i * TILE_WIDTH + threadIdx.x],
-				Cvalue
-			);
 		}
 		__syncthreads();
 	}
