@@ -7,10 +7,10 @@ comma= ,
 empty=
 space= $(empty) $(empty)
 NVCC=/usr/local/cuda/bin/nvcc
-NVCCFLAGS=-ccbin g++ -m64 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_32,code=sm_32 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50
+# NVCCFLAGS=-ccbin g++ -m64 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_32,code=sm_32 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50
 ARCH=30
-# NVCCFLAGS=-ccbin g++ --compiler-options $(subst $(space),$(comma),$(CFLAGS)) -m64 -gencode arch=compute_$(ARCH),code=sm_$(ARCH)
-NVLIBS=-L../wb/Linux-x86_64/ -lwb -lcuda
+NVCCFLAGS=-ccbin g++ --compiler-options $(subst $(space),$(comma),$(CFLAGS)) -m64 -gencode arch=compute_$(ARCH),code=sm_$(ARCH)
+NVLIBS=-L../wb/Linux-x86_64/ -lwb -lcudart -lcuda
 
 INCLUDES=-I../wb/
 
@@ -37,7 +37,7 @@ push:
 	/usr/bin/rsync -avz -e ssh --progress --delete $(HOME)/classes/hetero/mp$(ASSIGNMENT_NUMBER)/ som.hex21.com:classes/hetero/mp$(ASSIGNMENT_NUMBER)/
 
 test: $(BINS) data/*/input0.raw data/*/input1.raw data/*/output.raw
-	for d in data/*; do ./mp$(ASSIGNMENT_NUMBER) -i $${d}/input0.raw,$${d}/input1.raw} -t matrix -e $${d}/output.raw -o $${d}/mine.raw
+	for d in data/*; do ./mp$(ASSIGNMENT_NUMBER) -i "$${d}/input0.raw,$${d}/input1.raw" -t matrix -e "$${d}/output.raw" -o "$${d}/mine.raw"; done
 	
 
 mp$(ASSIGNMENT_NUMBER): mp$(ASSIGNMENT_NUMBER).o

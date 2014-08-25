@@ -1,5 +1,6 @@
 
 #include    <wb.h>
+#include "cuPrintf.cuh"
 
 const int TILE_WIDTH = 16;
 #define wbCheck(stmt) do {                                                    \
@@ -153,9 +154,9 @@ int main(int argc, char ** argv) {
 
     wbSolution(args, hostC, numCRows, numCColumns);
 
-    free(hostA); hostA = NULL;
-    free(hostB); hostB = NULL;
     free(hostC); hostC = NULL;
+    free(hostB); hostB = NULL;
+    free(hostA); hostA = NULL;
 
     return 0;
 }
