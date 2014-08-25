@@ -28,13 +28,17 @@ BINS=\
 	mp$(ASSIGNMENT_NUMBER) \
 
 
-all: $(OBJS) $(BINS)
+all: $(OBJS) $(BINS) test
 
 clean:
 	/bin/rm -f $(BINS) $(OBJS)
 
 push:
 	/usr/bin/rsync -avz -e ssh --progress --delete $(HOME)/classes/hetero/mp$(ASSIGNMENT_NUMBER)/ som.hex21.com:classes/hetero/mp$(ASSIGNMENT_NUMBER)/
+
+test: $(BINS) data/*/input0.raw data/*/input1.raw data/*/output.raw
+	for d in data/*; do ./mp$(ASSIGNMENT_NUMBER) -i $${d}/input0.raw,$${d}/input1.raw} -t matrix -e $${d}/output.raw -o $${d}/mine.raw
+	
 
 mp$(ASSIGNMENT_NUMBER): mp$(ASSIGNMENT_NUMBER).o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
