@@ -23,7 +23,7 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 
 	int r = blockIdx.y * blockDim.y;
 	int c = blockIdx.x * blockDim.x;
-	int idx = r * numCColumns + c;
+	int idx = (r+threadIdx.y) * numCColumns + c + threadIdx.x;
 
 	float tot = 0.0;
 	for (int tile = 0; tile < numAColumns/TILEWIDTH; ++tile) {
