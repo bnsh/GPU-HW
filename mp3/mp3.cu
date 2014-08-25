@@ -18,27 +18,68 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 			             int numCRows, int numCColumns) {
 	//@@ Insert code to implement matrix multiplication here
 	//@@ You have to use shared memory for this MP
-	float *d_M = A;
-	float *d_N = B;
-	float *d_P = C;
-	int Width = numAColumns;
-	__shared__ float Mds[TILEWIDTH][TILEWIDTH];
-	__shared__ float Nds[TILEWIDTH][TILEWIDTH];
+	__shared__ float mA[TILEWIDTH][TILEWIDTH];
+	__shared__ float mB[TILEWIDTH][TILEWIDTH];
 
-	int bx  = blockIdx.x;  int by = blockIdx.y;
-	int tx  = threadIdx.x; int ty = threadIdx.y;
-	int Row = by * TILEWIDTH + ty;
-	int Col = bx * TILEWIDTH + tx;
-	float Pvalue = 0;
-	for (int m = 0; m < Width / TILEWIDTH; ++m) {
-		Mds[tx][ty] = d_M[Row*Width+m*TILEWIDTH+tx];
-		Nds[tx][ty] = d_N[(m*TILEWIDTH+ty)*Width + Col];
+	int r = blockIdx.y * blockDim.y;
+	int c = blockIdx.x * blockDim.x;
+	int idx = (r+threadIdx.y) * numCColumns + c + threadIdx.x;
+
+	float tot = 0.0;
+	for (int tile = 0; tile < (numAColumns-1)/TILEWIDTH+1; ++tile) {
+// OK, the tiles extend horizontally for A
+// and vertically for B
+		int ar = r+threadIdx.y;
+		int ac = tile * TILEWIDTH + threadIdx.x;
+		int br = tile * TILEWIDTH + threadIdx.y;
+		int bc = c+threadIdx.x;
+		cuPrintf("ar=%d, ac=%d\n", ar, ac);
+		cuPrintf("br=%d, bc=%d\n", br, bc);
+		mA[threadIdx.y][threadIdx.x] = 0.0;
+		mB[threadIdx.y][threadIdx.x] = 0.0;
+		if ((ar < numARows) && (ac < numAColumns)) mA[threadIdx.y][threadIdx.x] = A[ar * numAColumns + ac];
+		if ((br < numBRows) && (bc < numBColumns)) mB[threadIdx.y][threadIdx.x] = B[br * numBColumns + bc];
 		__syncthreads();
-		for (int k = 0; k < TILEWIDTH; ++k)
-			Pvalue += Mds[tx][k] * Nds[k][ty];
+
+		for (int s = 0; s < TILEWIDTH; ++s) {
+			// We need a _particular strip here.
+			tot += mA[threadIdx.y][s] * mB[s][threadIdx.x];
+		}
 		__syncthreads();
+		// tot += A[r*numAColumns + i] * B[i*numBColumns + c];
 	}
-	d_P[Row * Width + Col] = Pvalue;
+	C[idx] = tot;
+}
+
+void singlematrixMultiplyShared(float * A, float * B, float * C,
+			             int numARows, int numAColumns,
+			             int numBRows, int numBColumns,
+			             int numCRows, int numCColumns) {
+	float mA[TILEWIDTH][TILEWIDTH];
+	float mB[TILEWIDTH][TILEWIDTH];
+	for (int i = 0; i < TILEWIDTH; ++i) {
+		for (int j = 0; j < TILEWIDTH; ++j) {
+			fprintf(stderr, "%d, %d\n", i, j);
+			mA[i][j] = A[(i*numAColumns)+j];
+			mB[i][j] = B[(i*numBColumns)+j];
+		}
+	}
+	int r = 0 * TILEWIDTH;
+	int c = 0 * TILEWIDTH;
+	int idx = (r+1) * numCColumns + c + 2;
+
+	float tot = 0.0;
+	for (int tile = 0; tile < numAColumns/TILEWIDTH; ++tile) {
+// OK, the tiles extend horizontally for A
+// and vertically for B
+		for (int s = 0; s < TILEWIDTH; ++s) {
+			// We need a _particular strip here.
+			tot += mA[1][s] * mB[s][2];
+		}
+		// tot += A[r*numAColumns + i] * B[i*numBColumns + c];
+	}
+	C[idx] = tot;
+	fprintf(stderr, "tot=%10.7f\n", C[idx]);
 }
 
 int main(int argc, char ** argv) {
@@ -89,7 +130,7 @@ int main(int argc, char ** argv) {
     //@@ Initialize the grid and block dimensions here
     dim3 blocksz(TILEWIDTH,TILEWIDTH,1);
     dim3 gridsz(((numCRows-1)/blocksz.x)+1,((numCColumns-1)/blocksz.y)+1,1);
-
+    
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
     matrixMultiplyShared<<<blocksz, gridsz>>>(deviceA, deviceB, deviceC,
