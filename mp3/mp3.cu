@@ -22,10 +22,6 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 	__shared__ float Atile[2 * TILE_WIDTH * TILE_WIDTH];
 	float *Btile = Atile + TILE_WIDTH * TILE_WIDTH;
 
-	cuPrintf("Before A = %dx%d B=%dx%d C=%dx%d C=%p\n",
-		numARows, numAColumns,
-		numBRows, numBColumns,
-		numCRows, numCColumns, C);
 	int Ar = blockIdx.y * blockDim.y;
 	int Bc = blockIdx.x * blockDim.x;
 
@@ -39,7 +35,19 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 		Atile[threadIdx.y * TILE_WIDTH + threadIdx.x] = A[Aidx];
 		Btile[threadIdx.y * TILE_WIDTH + threadIdx.x] = B[Bidx];
 		__syncthreads();
-		for (int i = 0; i < TILE_WIDTH; ++i) Cvalue += Atile[threadIdx.y * TILE_WIDTH + i] * Btile[i * TILE_WIDTH + threadIdx.x];
+		for (int i = 0; i < TILE_WIDTH; ++i) {
+			// Interesting. An array out of bounds _READ_ causes memory faults.
+			Cvalue += Atile[threadIdx.y * TILE_WIDTH + i] * Btile[i * TILE_WIDTH + threadIdx.x];
+			if ((threadIdx.y == 5) && (threadIdx.x == 0))
+			cuPrintf("A[%d][%d] * B[%d][%d] = %.7f * %.7f = %.7f (%.7f)\n",
+				Ar+threadIdx.y,Ac+i,
+				Br+i,Bc+threadIdx.x,
+				Atile[threadIdx.y * TILE_WIDTH + i],
+				Btile[i * TILE_WIDTH + threadIdx.x],
+				Atile[threadIdx.y * TILE_WIDTH + i] * Btile[i * TILE_WIDTH + threadIdx.x],
+				Cvalue
+			);
+		}
 		__syncthreads();
 	}
 
