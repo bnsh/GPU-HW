@@ -41,37 +41,6 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 	d_P[Row * Width + Col] = Pvalue;
 }
 
-void singlematrixMultiplyShared(float * A, float * B, float * C,
-			             int numARows, int numAColumns,
-			             int numBRows, int numBColumns,
-			             int numCRows, int numCColumns) {
-	float mA[TILEWIDTH][TILEWIDTH];
-	float mB[TILEWIDTH][TILEWIDTH];
-	for (int i = 0; i < TILEWIDTH; ++i) {
-		for (int j = 0; j < TILEWIDTH; ++j) {
-			fprintf(stderr, "%d, %d\n", i, j);
-			mA[i][j] = A[(i*numAColumns)+j];
-			mB[i][j] = B[(i*numBColumns)+j];
-		}
-	}
-	int r = 0 * TILEWIDTH;
-	int c = 0 * TILEWIDTH;
-	int idx = (r+1) * numCColumns + c + 2;
-
-	float tot = 0.0;
-	for (int tile = 0; tile < numAColumns/TILEWIDTH; ++tile) {
-// OK, the tiles extend horizontally for A
-// and vertically for B
-		for (int s = 0; s < TILEWIDTH; ++s) {
-			// We need a _particular strip here.
-			tot += mA[1][s] * mB[s][2];
-		}
-		// tot += A[r*numAColumns + i] * B[i*numBColumns + c];
-	}
-	C[idx] = tot;
-	fprintf(stderr, "tot=%10.7f\n", C[idx]);
-}
-
 int main(int argc, char ** argv) {
     wbArg_t args;
     float * hostA; // The A matrix
@@ -120,10 +89,7 @@ int main(int argc, char ** argv) {
     //@@ Initialize the grid and block dimensions here
     dim3 blocksz(TILEWIDTH,TILEWIDTH,1);
     dim3 gridsz(((numCRows-1)/blocksz.x)+1,((numCColumns-1)/blocksz.y)+1,1);
-	fprintf(stderr, "Asz = (%d, %d)\n", numARows, numAColumns);
-	fprintf(stderr, "Bsz = (%d, %d)\n", numBRows, numBColumns);
-	fprintf(stderr, "Csz = (%d, %d)\n", numCRows, numCColumns);
-    
+
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
     matrixMultiplyShared<<<blocksz, gridsz>>>(deviceA, deviceB, deviceC,
