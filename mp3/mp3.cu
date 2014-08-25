@@ -1,4 +1,4 @@
-
+#include <sys/stat.h>
 #include    <wb.h>
 #include "cuPrintf.cu"
 
@@ -48,6 +48,21 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 	C[Cidx] = Cvalue;
 }
 
+static float *myImport(const char *fn, int *rows, int *cols) {
+	float *rv = NULL;
+	(*rows) = (*cols) = -1;
+	struct stat buf;
+	if (0 == stat(fn, &buf)) {
+		char *buf = new char[buf.st_size+1]; memset(buf, '\0', buf.st_size+1);
+		FILE *fp = fopen(fn, "r");
+		if (fp) {
+			
+			fclose(fp); fp = NULL;
+		}
+	}
+	return rv;
+}
+
 int main(int argc, char ** argv) {
     wbArg_t args;
     float * hostA = NULL; // The A matrix
@@ -66,8 +81,8 @@ int main(int argc, char ** argv) {
     args = wbArg_read(argc, argv);
 
     wbTime_start(Generic, "Importing data and creating memory on host");
-    hostA = (float *) wbImport(wbArg_getInputFile(args, 0), &numARows, &numAColumns);
-    hostB = (float *) wbImport(wbArg_getInputFile(args, 1), &numBRows, &numBColumns);
+    hostA = (float *) myImport(wbArg_getInputFile(args, 0), &numARows, &numAColumns);
+    hostB = (float *) myImport(wbArg_getInputFile(args, 1), &numBRows, &numBColumns);
     //@@ Set numCRows and numCColumns
     numCRows = numARows;
     numCColumns = numBColumns;
