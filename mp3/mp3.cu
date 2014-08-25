@@ -30,6 +30,12 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 		mA[threadIdx.y][threadIdx.x] = A[r*numAColumns + i];
 		mB[threadIdx.y][threadIdx.x] = B[i*numAColumns + c];
 		__syncthreads();
+
+		for (int s = 0; s < TILEWIDTH; ++s) {
+			// We need a _particular strip here.
+			tot += mA[threadIdx.y][s] * mB[s][threadIdx.x];
+		}
+		__syncthreads();
 		// tot += A[r*numAColumns + i] * B[i*numBColumns + c];
 	}
 	C[idx] = tot;
