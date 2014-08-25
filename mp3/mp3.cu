@@ -13,73 +13,25 @@ const int TILE_WIDTH = 16;
     } while(0)
 
 // Compute C = A * B
-__global__ void matrixMultiplySharedBinesh(float * A, float * B, float * C,
+__global__ void matrixMultiplyShared(float * A, float * B, float * C,
 			             int numARows, int numAColumns,
 			             int numBRows, int numBColumns,
 			             int numCRows, int numCColumns) {
 	//@@ Insert code to implement matrix multiplication here
 	//@@ You have to use shared memory for this MP
-	__shared__ float mA[TILE_WIDTH][TILE_WIDTH];
-	__shared__ float mB[TILE_WIDTH][TILE_WIDTH];
+	__shared__ float Atile[TILE_WIDTH][TILE_WIDTH];
+	__shared__ float Btile[TILE_WIDTH][TILE_WIDTH];
 
-	int r = blockIdx.y * blockDim.y;
-	int c = blockIdx.x * blockDim.x;
-	int idx = (r+threadIdx.y) * numCColumns + c + threadIdx.x;
+	int tr = blockIdx.y * blockDim.y;
+	int tc = blockIdx.x * blockDim.x;
 
-	float tot = 0.0;
-	for (int tile = 0; tile < (numAColumns-1)/TILE_WIDTH+1; ++tile) {
-// OK, the tiles extend horizontally for A
-// and vertically for B
-		int ar = r+threadIdx.y;
-		int ac = tile * TILE_WIDTH + threadIdx.x;
-		int br = tile * TILE_WIDTH + threadIdx.y;
-		int bc = c+threadIdx.x;
-		mA[threadIdx.y][threadIdx.x] = 0.0;
-		mB[threadIdx.y][threadIdx.x] = 0.0;
-		if ((ar < numARows) && (ac < numAColumns)) mA[threadIdx.y][threadIdx.x] = A[ar * numAColumns + ac];
-		if ((br < numBRows) && (bc < numBColumns)) mB[threadIdx.y][threadIdx.x] = B[br * numBColumns + bc];
-		__syncthreads();
-
-		for (int s = 0; s < TILE_WIDTH; ++s) {
-			// We need a _particular strip here.
-			tot += mA[threadIdx.y][s] * mB[s][threadIdx.x];
-		}
-		__syncthreads();
-		// tot += A[r*numAColumns + i] * B[i*numBColumns + c];
+	for (int tile = 0; tile < (1+((numAColumns-1)/TILE_WIDTH)); ++tile) {
+		// Now, compute the index for this thread.
 	}
-	C[idx] = tot;
 }
-
-// Compute C = A * B
-__global__ void matrixMultiplySharedBook(float * d_M, float * d_N, float * d_P,
-			             int numARows, int Width,
-			             int numBRows, int numBColumns,
-			             int numCRows, int numCColumns) {
-	//@@ Insert code to implement matrix multiplication here
-	//@@ You have to use shared memory for this MP
-	__shared__ float Mds[TILE_WIDTH][TILE_WIDTH];
-	__shared__ float Nds[TILE_WIDTH][TILE_WIDTH];
-
-	int bx = blockIdx.x;  int by = blockIdx.y;
-	int tx = threadIdx.x; int ty = threadIdx.y;
-	int Row = by * TILE_WIDTH + ty;
-	int Col = bx * TILE_WIDTH + tx;
-
-	float Pvalue = 0;
-	for (int m = 0; m < Width/TILE_WIDTH; ++m) {
-		Mds[ty][tx] = d_M[Row*Width + m*TILE_WIDTH + tx];
-		Nds[ty][tx] = d_N[(m*TILE_WIDTH+ty)*Width + Col];
-		__syncthreads();
-		for (int k = 0; k < TILE_WIDTH; ++k) {
-			Pvalue += Mds[ty][k] * Nds[k][tx];
-		}
-		__syncthreads();
-	}
-	d_P[Row*Width+Col] = Pvalue;
-}
-
 
 int main(int argc, char ** argv) {
+    cudaPrintfInit();
     wbArg_t args;
     float * hostA; // The A matrix
     float * hostB; // The B matrix
@@ -130,7 +82,7 @@ int main(int argc, char ** argv) {
     
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
-    matrixMultiplySharedBook<<<blocksz, gridsz>>>(deviceA, deviceB, deviceC,
+    matrixMultiplyShared<<<blocksz, gridsz>>>(deviceA, deviceB, deviceC,
         numARows, numAColumns,
         numBRows, numBColumns,
         numCRows, numCColumns);
@@ -157,6 +109,8 @@ int main(int argc, char ** argv) {
     free(hostC); hostC = NULL;
     free(hostB); hostB = NULL;
     free(hostA); hostA = NULL;
+    cudaPrintfDisplay(stdout, true);
+    cudaPrintfEnd();
 
     return 0;
 }
