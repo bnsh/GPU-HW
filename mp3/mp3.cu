@@ -19,34 +19,37 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 			             int numCRows, int numCColumns) {
 	//@@ Insert code to implement matrix multiplication here
 	//@@ You have to use shared memory for this MP
-	__shared__ float Atile[TILE_WIDTH][TILE_WIDTH];
-	__shared__ float Btile[TILE_WIDTH][TILE_WIDTH];
+	__shared__ float Atile[2 * TILE_WIDTH * TILE_WIDTH];
+	float *Btile = Atile + TILE_WIDTH * TILE_WIDTH;
 
-	cuPrintf("A = %dx%d B=%dx%d C=%dx%d\n",
+	cuPrintf("Before A = %dx%d B=%dx%d C=%dx%d C=%p\n",
 		numARows, numAColumns,
 		numBRows, numBColumns,
-		numCRows, numCColumns);
+		numCRows, numCColumns, C);
 	int Ar = blockIdx.y * blockDim.y;
 	int Bc = blockIdx.x * blockDim.x;
 
-	float temp = 0.0;
+	float Cvalue = 0.0;
 	for (int tile = 0; tile < (1+((numAColumns-1)/TILE_WIDTH)); ++tile) {
 		int Ac = tile * TILE_WIDTH;
 		int Aidx = (Ar+threadIdx.y) * numAColumns + (Ac + threadIdx.x);
 		int Br = tile * TILE_WIDTH;
 		int Bidx = (Br+threadIdx.y) * numBColumns + (Bc + threadIdx.x);
 
-		Atile[threadIdx.y][threadIdx.x] = A[Aidx];
-		Btile[threadIdx.y][threadIdx.x] = B[Bidx];
+		Atile[threadIdx.y * TILE_WIDTH + threadIdx.x] = A[Aidx];
+		Btile[threadIdx.y * TILE_WIDTH + threadIdx.x] = B[Bidx];
 		__syncthreads();
-		for (int i = 0; i < TILE_WIDTH; ++i) temp += Atile[threadIdx.y][threadIdx.x+i] * Btile[threadIdx.y+i][threadIdx.x];
+		for (int i = 0; i < TILE_WIDTH; ++i) Cvalue += Atile[threadIdx.y * TILE_WIDTH + threadIdx.x+i] * Btile[(threadIdx.y+i) * TILE_WIDTH + threadIdx.x];
 		__syncthreads();
 	}
 
 	int Cr = Ar;
 	int Cc = Bc;
 	int Cidx = (Cr + threadIdx.y) * numCColumns + (Cc + threadIdx.x);
-	if ((Cr < numCRows) && (Cc < numCColumns)) C[Cidx] = temp;
+	cuPrintf("After A = %dx%d B=%dx%d C=%dx%d C=%p\n",
+		numARows, numAColumns,
+		numBRows, numBColumns,
+		numCRows, numCColumns, C);
 }
 
 int main(int argc, char ** argv) {
@@ -74,6 +77,7 @@ int main(int argc, char ** argv) {
     numCColumns = numBColumns;
     //@@ Allocate the hostC matrix
     hostC = (float *)(malloc(sizeof(float) * numCRows * numCColumns));
+    for (int i = 0; i < (numCRows * numCColumns); ++i) hostC[i] = i;
     wbTime_stop(Generic, "Importing data and creating memory on host");
 
     wbLog(TRACE, "The dimensions of A are ", numARows, " x ", numAColumns);
@@ -92,6 +96,7 @@ int main(int argc, char ** argv) {
     //@@ Copy memory to the GPU here
     wbCheck(cudaMemcpy(deviceA, hostA, (sizeof(float) * numARows * numAColumns), cudaMemcpyHostToDevice));
     wbCheck(cudaMemcpy(deviceB, hostB, (sizeof(float) * numBRows * numBColumns), cudaMemcpyHostToDevice));
+    wbCheck(cudaMemcpy(deviceC, hostC, (sizeof(float) * numBRows * numBColumns), cudaMemcpyHostToDevice));
 
     wbTime_stop(GPU, "Copying input memory to the GPU.");
     
