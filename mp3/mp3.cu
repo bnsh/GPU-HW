@@ -49,6 +49,36 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 	C[idx] = tot;
 }
 
+void singlematrixMultiplyShared(float * A, float * B, float * C,
+			             int numARows, int numAColumns,
+			             int numBRows, int numBColumns,
+			             int numCRows, int numCColumns) {
+	int r = 0 * TILEWIDTH;
+	int c = 0 * TILEWIDTH;
+	int idx = (r+1) * numCColumns + c + 2;
+
+	float tot = 0.0;
+	for (int tile = 0; tile < numAColumns/TILEWIDTH; ++tile) {
+// OK, the tiles extend horizontally for A
+// and vertically for B
+		int ar = r+1;
+		int ac = tile * TILEWIDTH + 2;
+		int br = tile * TILEWIDTH + 1;
+		int bc = c+2;
+		mA[1][2] = 0.0;
+		mB[1][2] = 0.0;
+		if ((ar < numARows) && (ac < numAColumns)) mA[1][2] = A[ar * numAColumns + ac];
+		if ((br < numBRows) && (bc < numBColumns)) mB[1][2] = B[br * numBColumns + bc];
+
+		for (int s = 0; s < TILEWIDTH; ++s) {
+			// We need a _particular strip here.
+			tot += mA[1][s] * mB[s][2];
+		}
+		// tot += A[r*numAColumns + i] * B[i*numBColumns + c];
+	}
+	C[idx] = tot;
+}
+
 int main(int argc, char ** argv) {
     wbArg_t args;
     float * hostA; // The A matrix
