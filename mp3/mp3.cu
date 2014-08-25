@@ -22,12 +22,29 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 	__shared__ float Atile[TILE_WIDTH][TILE_WIDTH];
 	__shared__ float Btile[TILE_WIDTH][TILE_WIDTH];
 
-	int tr = blockIdx.y * blockDim.y;
-	int tc = blockIdx.x * blockDim.x;
+	int Ar = blockIdx.y * blockDim.y;
+	int Bc = blockIdx.x * blockDim.x;
 
+	float temp = 0.0;
 	for (int tile = 0; tile < (1+((numAColumns-1)/TILE_WIDTH)); ++tile) {
-		// Now, compute the index for this thread.
+		int Ac = tile * TILE_WIDTH;
+		int Aidx = (Ar+threadIdx.y) * numAColumns + (Ac + threadIdx.x);
+		int Br = tile * TILE_WIDTH;
+		int Bidx = (Br+threadIdx.y) * numBColumns + (Bc + threadIdx.x);
+		Atile[threadIdx.y][threadIdx.x] = 0.0;
+		Btile[threadIdx.y][threadIdx.x] = 0.0;
+
+		if (((Ar < numARows) && (Ac < numAColumns))) Atile[threadIdx.y][threadIdx.x] = A[Aidx];
+		if (((Br < numBRows) && (Bc < numBColumns))) Btile[threadIdx.y][threadIdx.x] = B[Bidx];
+		__syncthreads();
+		for (int i = 0; i < TILE_WIDTH; ++i) temp += Atile[threadIdx.y][threadIdx.x+i] * Btile[threadIdx.y+i][threadIdx.x];
+		__syncthreads();
 	}
+
+	int Cr = Ar;
+	int Cc = Bc;
+	int Cidx = (Cr + threadIdx.y) * numCColumns + (Cc + threadIdx.x);
+	C[Cidx] = temp;
 }
 
 int main(int argc, char ** argv) {

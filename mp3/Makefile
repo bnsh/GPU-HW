@@ -24,7 +24,6 @@ NVSRCS=\
 OBJS=$(CSRCS:C=o) $(NVSRCS:cu=o)
 
 BINS=\
-	cuPrintftest \
 	mp$(ASSIGNMENT_NUMBER) \
 
 
@@ -41,9 +40,6 @@ test: $(BINS) data/*/input0.raw data/*/input1.raw data/*/output.raw
 	
 
 mp$(ASSIGNMENT_NUMBER): mp$(ASSIGNMENT_NUMBER).o
-	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
-
-cuPrintftest: cuPrintftest.o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
 %.o: %.cu
