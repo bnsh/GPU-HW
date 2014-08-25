@@ -1,6 +1,6 @@
 
 #include    <wb.h>
-#include "cuPrintf.cuh"
+#include "cuPrintf.cu"
 
 const int TILE_WIDTH = 16;
 #define wbCheck(stmt) do {                                                    \
@@ -43,6 +43,7 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 
 	int Cr = Ar;
 	int Cc = Bc;
+	cuPrintf("threadIdx=[%d][%d], C[%d][%d]\n", threadIdx.y, threadIdx.x, Cr, Cc);
 	int Cidx = (Cr + threadIdx.y) * numCColumns + (Cc + threadIdx.x);
 	C[Cidx] = temp;
 }
@@ -99,7 +100,7 @@ int main(int argc, char ** argv) {
     
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
-    matrixMultiplyShared<<<blocksz, gridsz>>>(deviceA, deviceB, deviceC,
+    matrixMultiplyShared<<<gridsz, blocksz>>>(deviceA, deviceB, deviceC,
         numARows, numAColumns,
         numBRows, numBColumns,
         numCRows, numCColumns);
