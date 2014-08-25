@@ -42,24 +42,17 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 	int Cr = Ar;
 	int Cc = Bc;
 	int Cidx = (Cr + threadIdx.y) * numCColumns + (Cc + threadIdx.x);
-	cuPrintf("blockDim = (%d, %d, %d)\n", blockDim.x, blockDim.y, blockDim.z);
-	cuPrintf("C(%d, %d) -> (%d+%d, %d+%d) -> (%d, %d) -> %d (%s)\n",
-		Cr, Cc, 
-		Cr, threadIdx.y, Cc, threadIdx.x, 
-		Cr + threadIdx.y, Cc + threadIdx.x, 
-		Cidx,
-		(Cidx < (numCRows*numCColumns) ? "Good!" : "Uh-oh"));
-	// if ((Cr < numCRows) && (Cc < numCColumns)) C[Cidx] = temp;
+	if ((Cr < numCRows) && (Cc < numCColumns)) C[Cidx] = temp;
 }
 
 int main(int argc, char ** argv) {
     wbArg_t args;
-    float * hostA; // The A matrix
-    float * hostB; // The B matrix
-    float * hostC; // The output C matrix
-    float * deviceA;
-    float * deviceB;
-    float * deviceC;
+    float * hostA = NULL; // The A matrix
+    float * hostB = NULL; // The B matrix
+    float * hostC = NULL; // The output C matrix
+    float * deviceA = NULL;
+    float * deviceB = NULL;
+    float * deviceC = NULL;
     int numARows; // number of rows in the matrix A
     int numAColumns; // number of columns in the matrix A
     int numBRows; // number of rows in the matrix B
@@ -104,7 +97,7 @@ int main(int argc, char ** argv) {
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
     cudaPrintfInit();
-    matrixMultiplyShared<<<gridsz, blocksz>>>(deviceA, deviceB, deviceC,
+    matrixMultiplyShared<<<gridsz, blocksz, 256*sizeof(float)>>>(deviceA, deviceB, deviceC,
         numARows, numAColumns,
         numBRows, numBColumns,
         numCRows, numCColumns);
