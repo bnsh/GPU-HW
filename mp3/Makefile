@@ -27,7 +27,7 @@ BINS=\
 	mp$(ASSIGNMENT_NUMBER) \
 
 
-all: $(OBJS) $(BINS) test
+all: $(OBJS) $(BINS)
 
 clean:
 	/bin/rm -f $(BINS) $(OBJS)

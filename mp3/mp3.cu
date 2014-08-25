@@ -44,12 +44,14 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 	int Cr = Ar;
 	int Cc = Bc;
 	int Cidx = (Cr + threadIdx.y) * numCColumns + (Cc + threadIdx.x);
-	cuPrintf("C(%d, %d) -> (%d+%d, %d+%d) -> (%d, %d) -> %d\n",
+	cuPrintf("blockDim = (%d, %d, %d)\n", blockDim.x, blockDim.y, blockDim.z);
+	cuPrintf("C(%d, %d) -> (%d+%d, %d+%d) -> (%d, %d) -> %d (%s)\n",
 		Cr, Cc, 
 		Cr, threadIdx.y, Cc, threadIdx.x, 
 		Cr + threadIdx.y, Cc + threadIdx.x, 
-		Cidx);
-	// C[Cidx] = temp;
+		Cidx,
+		(Cidx < (numCRows*numCColumns) ? "Good!" : "Uh-oh"));
+	C[Cidx] = temp;
 }
 
 int main(int argc, char ** argv) {
@@ -104,13 +106,13 @@ int main(int argc, char ** argv) {
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
     cudaPrintfInit();
-    matrixMultiplyShared<<<gridsz, blocksz>>>(deviceA, deviceB, deviceC,
+    matrixMultiplyShared<<<blocksz, gridsz>>>(deviceA, deviceB, deviceC,
         numARows, numAColumns,
         numBRows, numBColumns,
         numCRows, numCColumns);
 
     cudaThreadSynchronize();
-    cudaPrintfDisplay(stderr, true);
+    cudaPrintfDisplay(stdout, true);
     cudaPrintfEnd();
     wbTime_stop(Compute, "Performing CUDA computation");
     
