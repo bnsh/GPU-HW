@@ -1,5 +1,6 @@
 
 #include    <wb.h>
+#include "cuPrintf.cuh"
 
 const int TILEWIDTH = 16;
 #define wbCheck(stmt) do {                                                    \
@@ -83,6 +84,7 @@ void singlematrixMultiplyShared(float * A, float * B, float * C,
 }
 
 int main(int argc, char ** argv) {
+    cudaPrintfInit();
     wbArg_t args;
     float * hostA; // The A matrix
     float * hostB; // The B matrix
@@ -160,6 +162,9 @@ int main(int argc, char ** argv) {
     free(hostA); hostA = NULL;
     free(hostB); hostB = NULL;
     free(hostC); hostC = NULL;
+
+    cudaPrintfDisplay(stdout, true);
+    cudaPrintfEnd();
 
     return 0;
 }
