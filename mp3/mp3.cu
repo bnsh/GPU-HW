@@ -27,8 +27,10 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 
 	float tot = 0.0;
 	for (int tile = 0; tile < numAColumns/TILEWIDTH; ++tile) {
-		mA[threadIdx.y][threadIdx.x] = A[(r+threadIdx.y)*numAColumns + tile * TILEWIDTH];
-		mB[threadIdx.y][threadIdx.x] = B[(tile*TILEWIDTH)*numAColumns + (c+threadIdx.x)];
+// OK, the tiles extend horizontally for A
+// and vertically for B
+		mA[threadIdx.y][threadIdx.x] = A[(r+threadIdx.y) * numAColumns + tile*TILEWIDTH + threadIdx.x];
+		mB[threadIdx.y][threadIdx.x] = B[(tile*TILEWIDTH+threadIdx.y) * numBColumns + c + threadIdx.x];
 		__syncthreads();
 
 		for (int s = 0; s < TILEWIDTH; ++s) {
