@@ -13,7 +13,7 @@ const int TILE_WIDTH = 16;
     } while(0)
 
 // Compute C = A * B
-__global__ void matrixMultiplyShared(float * A, float * B, float * C,
+__global__ void matrixMultiplyShared(const float * A, const float * B, float * C,
 			             int numARows, int numAColumns,
 			             int numBRows, int numBColumns,
 			             int numCRows, int numCColumns) {
@@ -31,11 +31,9 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 		int Aidx = (Ar+threadIdx.y) * numAColumns + (Ac + threadIdx.x);
 		int Br = tile * TILE_WIDTH;
 		int Bidx = (Br+threadIdx.y) * numBColumns + (Bc + threadIdx.x);
-		Atile[threadIdx.y][threadIdx.x] = 0.0;
-		Btile[threadIdx.y][threadIdx.x] = 0.0;
 
-		if (((Ar < numARows) && (Ac < numAColumns))) Atile[threadIdx.y][threadIdx.x] = A[Aidx];
-		if (((Br < numBRows) && (Bc < numBColumns))) Btile[threadIdx.y][threadIdx.x] = B[Bidx];
+		Atile[threadIdx.y][threadIdx.x] = A[Aidx];
+		Btile[threadIdx.y][threadIdx.x] = B[Bidx];
 		__syncthreads();
 		for (int i = 0; i < TILE_WIDTH; ++i) temp += Atile[threadIdx.y][threadIdx.x+i] * Btile[threadIdx.y+i][threadIdx.x];
 		__syncthreads();
@@ -51,7 +49,7 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 		Cr + threadIdx.y, Cc + threadIdx.x, 
 		Cidx,
 		(Cidx < (numCRows*numCColumns) ? "Good!" : "Uh-oh"));
-	C[Cidx] = temp;
+	// if ((Cr < numCRows) && (Cc < numCColumns)) C[Cidx] = temp;
 }
 
 int main(int argc, char ** argv) {
@@ -101,12 +99,12 @@ int main(int argc, char ** argv) {
     
     //@@ Initialize the grid and block dimensions here
     dim3 blocksz(TILE_WIDTH,TILE_WIDTH,1);
-    dim3 gridsz(((numCRows-1)/blocksz.x)+1,((numCColumns-1)/blocksz.y)+1,1);
+    dim3 gridsz(((numCColumns-1)/blocksz.x)+1,((numCRows-1)/blocksz.y)+1,1);
     
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
     cudaPrintfInit();
-    matrixMultiplyShared<<<blocksz, gridsz>>>(deviceA, deviceB, deviceC,
+    matrixMultiplyShared<<<gridsz, blocksz>>>(deviceA, deviceB, deviceC,
         numARows, numAColumns,
         numBRows, numBColumns,
         numCRows, numCColumns);
