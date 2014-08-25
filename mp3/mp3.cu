@@ -39,17 +39,14 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 		Atile[threadIdx.y * TILE_WIDTH + threadIdx.x] = A[Aidx];
 		Btile[threadIdx.y * TILE_WIDTH + threadIdx.x] = B[Bidx];
 		__syncthreads();
-		for (int i = 0; i < TILE_WIDTH; ++i) Cvalue += Atile[threadIdx.y * TILE_WIDTH + threadIdx.x+i] * Btile[(threadIdx.y+i) * TILE_WIDTH + threadIdx.x];
+		for (int i = 0; i < TILE_WIDTH; ++i) Cvalue += Atile[threadIdx.y * TILE_WIDTH + i] * Btile[i * TILE_WIDTH + threadIdx.x];
 		__syncthreads();
 	}
 
 	int Cr = Ar;
 	int Cc = Bc;
 	int Cidx = (Cr + threadIdx.y) * numCColumns + (Cc + threadIdx.x);
-	cuPrintf("After A = %dx%d B=%dx%d C=%dx%d C=%p\n",
-		numARows, numAColumns,
-		numBRows, numBColumns,
-		numCRows, numCColumns, C);
+	C[Cidx] = Cvalue;
 }
 
 int main(int argc, char ** argv) {
@@ -77,7 +74,7 @@ int main(int argc, char ** argv) {
     numCColumns = numBColumns;
     //@@ Allocate the hostC matrix
     hostC = (float *)(malloc(sizeof(float) * numCRows * numCColumns));
-    for (int i = 0; i < (numCRows * numCColumns); ++i) hostC[i] = i;
+    for (int i = 0; i < (numCRows * numCColumns); ++i) hostC[i] = 219 + i;
     wbTime_stop(Generic, "Importing data and creating memory on host");
 
     wbLog(TRACE, "The dimensions of A are ", numARows, " x ", numAColumns);
