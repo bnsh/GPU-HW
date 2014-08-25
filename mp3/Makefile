@@ -10,7 +10,7 @@ NVCC=/usr/local/cuda/bin/nvcc
 # NVCCFLAGS=-ccbin g++ -m64 -gencode arch=compute_20,code=sm_20 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_32,code=sm_32 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_50,code=compute_50
 ARCH=30
 NVCCFLAGS=-ccbin g++ --compiler-options $(subst $(space),$(comma),$(CFLAGS)) -m64 -gencode arch=compute_$(ARCH),code=sm_$(ARCH)
-NVLIBS=-L../wb/Linux-x86_64/ -lwb -L/usr/local/cuda-6.0/lib64/ -lcudadevrt -lcuda
+NVLIBS=-L../wb/Linux-x86_64/ -lwb -lcuda
 
 INCLUDES=-I../wb/
 

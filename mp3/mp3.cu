@@ -43,13 +43,16 @@ __global__ void matrixMultiplyShared(float * A, float * B, float * C,
 
 	int Cr = Ar;
 	int Cc = Bc;
-	cuPrintf("threadIdx=[%d][%d], C[%d][%d]\n", threadIdx.y, threadIdx.x, Cr, Cc);
 	int Cidx = (Cr + threadIdx.y) * numCColumns + (Cc + threadIdx.x);
-	C[Cidx] = temp;
+	cuPrintf("C(%d, %d) -> (%d+%d, %d+%d) -> (%d, %d) -> %d\n",
+		Cr, Cc, 
+		Cr, threadIdx.y, Cc, threadIdx.x, 
+		Cr + threadIdx.y, Cc + threadIdx.x, 
+		Cidx);
+	// C[Cidx] = temp;
 }
 
 int main(int argc, char ** argv) {
-    cudaPrintfInit();
     wbArg_t args;
     float * hostA; // The A matrix
     float * hostB; // The B matrix
@@ -100,12 +103,15 @@ int main(int argc, char ** argv) {
     
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
+    cudaPrintfInit();
     matrixMultiplyShared<<<gridsz, blocksz>>>(deviceA, deviceB, deviceC,
         numARows, numAColumns,
         numBRows, numBColumns,
         numCRows, numCColumns);
 
     cudaThreadSynchronize();
+    cudaPrintfDisplay(stderr, true);
+    cudaPrintfEnd();
     wbTime_stop(Compute, "Performing CUDA computation");
     
     wbTime_start(Copy, "Copying output memory to the CPU");
@@ -127,8 +133,6 @@ int main(int argc, char ** argv) {
     free(hostC); hostC = NULL;
     free(hostB); hostB = NULL;
     free(hostA); hostA = NULL;
-    cudaPrintfDisplay(stdout, true);
-    cudaPrintfEnd();
 
     return 0;
 }
