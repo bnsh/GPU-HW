@@ -1,6 +1,5 @@
 
 #include    <wb.h>
-#include "cuPrintf.cu"
 
 #define TILE_WIDTH (16)
 #define wbCheck(stmt) do {                                                    \
@@ -102,15 +101,12 @@ int main(int argc, char ** argv) {
     
     wbTime_start(Compute, "Performing CUDA computation");
     //@@ Launch the GPU Kernel here
-    cudaPrintfInit();
     matrixMultiplyShared<<<gridsz, blocksz>>>(deviceA, deviceB, deviceC,
         numARows, numAColumns,
         numBRows, numBColumns,
         numCRows, numCColumns);
 
     cudaThreadSynchronize();
-    cudaPrintfDisplay(stdout, true);
-    cudaPrintfEnd();
     wbTime_stop(Compute, "Performing CUDA computation");
     
     wbTime_start(Copy, "Copying output memory to the CPU");
