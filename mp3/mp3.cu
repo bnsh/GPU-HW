@@ -1,4 +1,4 @@
-
+#include <sys/stat.h>
 #include    <wb.h>
 
 #define TILE_WIDTH (16)
@@ -47,6 +47,31 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 	C[Cidx] = Cvalue;
 }
 
+static float *myImport(const char *fn, int *rows, int *cols) __attribute__((unused));
+static float *myImport(const char *fn, int *rows, int *cols) {
+	float *rv = NULL;
+	(*rows) = (*cols) = -1;
+	struct stat buf;
+	if (0 == stat(fn, &buf)) {
+		char *rawdata = new char[buf.st_size+1]; memset(rawdata, '\0', buf.st_size+1);
+		FILE *fp = fopen(fn, "r");
+		if (fp) {
+			assert((unsigned int)buf.st_size == fread(rawdata, 1, buf.st_size, fp));
+			char *scrtch = NULL;
+			int r = atoi(strtok_r(rawdata, " \t\r\n\f", &scrtch));
+			int c = atoi(strtok_r(NULL, " \t\r\n\f", &scrtch));
+			float *raw = (float *)malloc(sizeof(float) * r * c);
+			for (int i = 0; i < r*c; ++i) raw[i] = atof(strtok_r(NULL, " \t\r\n\f", &scrtch));
+			fclose(fp); fp = NULL;
+			rv = raw;
+			(*rows) = r;
+			(*cols) = c;
+		}
+		delete[] rawdata; rawdata = NULL;
+	}
+	return rv;
+}
+
 int main(int argc, char ** argv) {
     wbArg_t args;
     float * hostA = NULL; // The A matrix
@@ -65,8 +90,8 @@ int main(int argc, char ** argv) {
     args = wbArg_read(argc, argv);
 
     wbTime_start(Generic, "Importing data and creating memory on host");
-    hostA = (float *) wbImport(wbArg_getInputFile(args, 0), &numARows, &numAColumns);
-    hostB = (float *) wbImport(wbArg_getInputFile(args, 1), &numBRows, &numBColumns);
+    hostA = (float *) myImport(wbArg_getInputFile(args, 0), &numARows, &numAColumns);
+    hostB = (float *) myImport(wbArg_getInputFile(args, 1), &numBRows, &numBColumns);
     //@@ Set numCRows and numCColumns
     numCRows = numARows;
     numCColumns = numBColumns;
