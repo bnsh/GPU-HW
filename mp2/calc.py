@@ -27,6 +27,9 @@ def main(argv):
 	mato = mat1.dot(mat2)
 	fin = time.time()
 	print "Took %.7f secs" % (fin-start)
+	print mat1.shape
+	print mat2.shape
+	print mato.shape
 
 if __name__ == "__main__":
 	main(sys.argv[1:])
