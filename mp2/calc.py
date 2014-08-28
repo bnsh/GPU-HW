@@ -24,7 +24,7 @@ def main(argv):
 	mat1 = read_matrix(argv[0])
 	mat2 = read_matrix(argv[1])
 	start = time.time()
-	mato = mat1.dot(mat2)
+	mato = np.dot(mat1, mat2)
 	fin = time.time()
 	print "Took %.7f secs" % (fin-start)
 	print mato.shape
