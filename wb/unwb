@@ -1,0 +1,138 @@
+#! /usr/bin/python
+
+import sys
+import re
+import json
+import copy
+import time
+
+def grab_raw_events(s):
+	logger_data = s["logger"]["elements"]
+	timer_data = s["timer"]["elements"]
+	rawevents = []
+	for e in logger_data:
+		hr = {
+			"type": "logger",
+			"start_file": e["file"],
+			"start_function": e["function"],
+			"start_line": e["line"],
+			"start_time": e["time"],
+			"end_file": e["file"],
+			"end_function": e["function"],
+			"end_line": e["line"],
+			"end_time": e["time"],
+			"message": e["message"],
+			"bbchildren": []
+		}
+		rawevents.append(hr)
+	for e in timer_data:
+		hr = {
+			"type": "timer",
+			"id": e["id"],
+			"parent_id": e["parent_id"],
+			"stopped": e["stopped"],
+			"kind": e["kind"],
+			"start_file": e["start_file"],
+			"start_function": e["start_function"],
+			"start_line": e["start_line"],
+			"start_time": e["start_time"],
+			"end_file": e["end_file"],
+			"end_function": e["end_function"],
+			"end_line": e["end_line"],
+			"end_time": e["end_time"],
+			"message": e["message"],
+			"bbchildren": []
+		}
+		rawevents.append(hr)
+	return rawevents
+
+def grab_events(s):
+	rawevents = grab_raw_events(s)
+	# Now, go through each rawevent. If it is _inside_ any other even
+	# timewise, add it to the bbchildren Find the tightest bound tho
+	for re in rawevents:
+		best_proportion = None
+		best_parent = None
+		for container in rawevents:
+			if re != container:
+				if (
+					container["start_time"] <= re["start_time"] and
+					re["start_time"] <= re["end_time"] and
+					re["end_time"] <= container["end_time"]
+				):
+					p = (re["end_time"] - re["start_time"] + 0.0) / (container["end_time"] - container["start_time"] + 0.0)
+					# we want this to be as large as possible.
+					if best_proportion == None or best_proportion < p:
+						best_proportion = p
+						best_parent = container
+		if best_parent != None:
+			best_parent["bbchildren"].append(re)
+
+	cookedevents = []
+	for re in rawevents:
+		re["bbchildren"] = sorted(re["bbchildren"], key=lambda x: x["start_time"])
+		if len(re["bbchildren"]) == 0:
+			cookedevents.append(re)
+
+	rv = {
+		"bbchildren": sorted(cookedevents, key=lambda x: x["start_time"]),
+		"id": -1, 
+		"kind": "Full", 
+		"message": "Full Timer", 
+		"parent_id": -1, 
+		"start_file": "full", 
+		"start_function": "full", 
+		"start_line": -1, 
+		"start_time": cookedevents[0]["start_time"], 
+		"end_file": "full", 
+		"end_function": "full", 
+		"end_line": -1, 
+		"end_time": cookedevents[-1]["end_time"], 
+		"stopped": True, 
+		"type": "timer"
+	}
+
+	return rv
+
+def pretty_wb(depth, s):
+	indent = "\t" * depth
+	start = s["start_time"]
+	end = s["end_time"]
+	elapsed = end - start
+	starts = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(start/1000000000.0))
+	ends = time.strftime("%Y-%m-%d %H:%M:%S", time.gmtime(end/1000000000.0))
+	print "%s: %s%s:%d:%s: %s (%.9f s)" % (starts, indent, s["start_file"], s["start_line"], s["start_function"], s["message"], elapsed / 1000000000.0)
+	if len(s["bbchildren"]) > 0:
+		for child in s["bbchildren"]:
+			pretty_wb(1+depth, child)
+		if elapsed > 0:
+			print "%s: %s%s:%d:%s" % (ends, indent, s["end_file"], s["end_line"], s["end_function"])
+
+def main():
+	lines = sys.stdin.readlines()
+	js = ""
+	state = 0
+	for line in lines:
+		if state == 0:
+			m = re.match(r'^(.*)==\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$\$$', line.strip())
+			if m:
+				state = 1
+				print m.group(1)
+			else:
+				print line
+		elif state == 1:
+			js += line
+	s = json.loads(js)
+	pretty_wb(0, grab_events(s))
+	if (s["solution_exists"] and (not s["solution"]["correctq"])):
+		print "Solution incorrect"
+		return 1
+	elif (s["solution_exists"] and s["solution"]["correctq"]):
+		print "Solution correct!"
+		return 0
+	else:
+		print "No solution provided"
+		return 0
+
+if __name__ == "__main__":
+	sys.exit(main())

@@ -17,16 +17,19 @@ def read_matrix(fn):
 			ss = line.split()
 			for c in xrange(0, cols):
 				mm[r,c] = float(ss[c])
+			r += 1
 		mat = mm
 	return mat
 
 def main(argv):
 	mat1 = read_matrix(argv[0])
 	mat2 = read_matrix(argv[1])
+	print "Starting Calculation"
 	start = time.time()
-	mato = mat1.dot(mat2)
+	mato = np.dot(mat1, mat2)
 	fin = time.time()
 	print "Took %.7f secs" % (fin-start)
+	print mat1
 	print mat1.shape
 	print mat2.shape
 	print mato.shape
