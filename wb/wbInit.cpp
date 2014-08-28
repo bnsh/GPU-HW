@@ -2,9 +2,9 @@
 #include <wb.h>
 #include <wbCUDA.h>
 
-#define MB (1 << 20)
+#define MB (1L << 20)
 #ifndef WB_DEFAULT_HEAP_SIZE
-const size_t WB_DEFAULT_HEAP_SIZE = (256 * MB);
+const size_t WB_DEFAULT_HEAP_SIZE = (4096L * MB);
 #endif /* WB_DEFAULT_HEAP_SIZE */
 
 static bool _initializedQ = wbFalse;
