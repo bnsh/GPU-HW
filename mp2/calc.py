@@ -23,6 +23,7 @@ def read_matrix(fn):
 def main(argv):
 	mat1 = read_matrix(argv[0])
 	mat2 = read_matrix(argv[1])
+	print "Starting Calculation"
 	start = time.time()
 	mato = np.dot(mat1, mat2)
 	fin = time.time()
