@@ -18,7 +18,7 @@ def read_matrix(fn):
 			for c in xrange(0, cols):
 				mm[r,c] = float(ss[c])
 			r += 1
-		mat = mm
+		mat = np.float32(mm)
 	return mat
 
 def main(argv):
