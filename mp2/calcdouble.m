@@ -1,4 +1,4 @@
-function ssq = calc(dir)
+function ssq = calcdouble(dir)
 	input0fn = strcat(dir,'/input0.raw');
 	input1fn = strcat(dir,'/input1.raw');
 	outputfn = strcat(dir,'/output.raw');
