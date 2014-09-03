@@ -5,7 +5,10 @@ function ssq = calc(dir)
 	input0 = importdata(input0fn,' ',1).data;
 	input1 = importdata(input1fn,' ',1).data;
 	output = importdata(outputfn,' ',1).data;
-	err = (input0 * input1) - output;
+	tic
+	mul = (input0 * input1);
+	toc
+	err = mul - output;
 	err2 = err .* err;
 	ssq = sum(sum(err2));
 endfunction
