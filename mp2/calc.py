@@ -22,13 +22,15 @@ def read_matrix(fn):
 	return mat
 
 def main(argv):
+	start = time.time()
 	mat1 = read_matrix(argv[0])
 	mat2 = read_matrix(argv[1])
+	read_done = time.time()
 	print "Starting Calculation"
-	start = time.time()
 	mato = np.dot(mat1, mat2)
 	fin = time.time()
-	print "Took %.7f secs" % (fin-start)
+	print "Took %.7f secs to read" % (read_done-start)
+	print "Took %.7f secs to multiply" % (fin-read_done)
 	print mat1
 	print mat1.shape
 	print mat2.shape
