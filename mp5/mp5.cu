@@ -54,7 +54,7 @@ int main(int argc, char ** argv) {
 
 	//@@ Initialize the grid and block dimensions here
 	dim3 blocksz(BLOCK_SIZE, 1, 1);
-	dim3 gridsz((
+	dim3 gridsz((((numElements-1) / BLOCK_SIZE)+1), 1, 1);
 
 	wbTime_start(Compute, "Performing CUDA computation");
 	//@@ Modify this to complete the functionality of the scan
