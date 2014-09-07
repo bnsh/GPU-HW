@@ -28,10 +28,16 @@ __global__ void scan(float * input, float * output, int len) {
 	for (int stride = 1; stride < blockDim.x; stride *= 2) {
 		// We start at 2 * stride - 1 and for each threadIdx.x we add a 2*stride
 		int idx = (2 * stride - 1) + (threadIdx.x * stride * 2);
-		if (idx < len) XY[idx] += XY[idx-stride]
+		if (idx < len) XY[idx] += XY[idx-stride];
 		__syncthreads();
 	}
 
+	for (int stride = blockDim.x / 4; stride > 0; stride /= 2) {
+		int idx = (3 * stride - 1) + (threadIdx.x * 2 * stride);
+		if (idx < len) XY[idx] += XY[idx-stride];
+		__syncthreads();
+	}
+	if (i < len) output[i] = XY[threadIdx.x];
 }
 
 int main(int argc, char ** argv) {
@@ -71,6 +77,7 @@ int main(int argc, char ** argv) {
 	wbTime_start(Compute, "Performing CUDA computation");
 	//@@ Modify this to complete the functionality of the scan
 	//@@ on the deivce
+	scan<<<gridsz, blocksz>>>(deviceInput, deviceOutput, numElements);
 
 	cudaDeviceSynchronize();
 	wbTime_stop(Compute, "Performing CUDA computation");
