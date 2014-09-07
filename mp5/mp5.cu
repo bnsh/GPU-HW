@@ -28,7 +28,7 @@ __global__ void scan(float * input, float * output, int len) {
 	for (int stride = 1; stride < blockDim.x; stride *= 2) {
 		// We start at 2 * stride - 1 and for each threadIdx.x we add a 2*stride
 		int idx = (2 * stride - 1) + (threadIdx.x * stride * 2);
-		if (idx+stride < len) XY[idx] += XY[idx+stride]
+		if (idx < len) XY[idx] += XY[idx-stride]
 		__syncthreads();
 	}
 
