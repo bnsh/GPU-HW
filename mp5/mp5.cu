@@ -20,6 +20,18 @@ __global__ void scan(float * input, float * output, int len) {
 	//@@ the scan on the device
 	//@@ You may need multiple kernel calls; write your kernels before this
 	//@@ function and call them from here
+	__shared__ float XY[BLOCK_SIZE];
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i < len) XY[i] = input[i];
+	__syncthreads();
+
+	for (int stride = 1; stride < blockDim.x; stride *= 2) {
+		// We start at 2 * stride - 1 and for each threadIdx.x we add a 2*stride
+		int idx = (2 * stride - 1) + (threadIdx.x * stride * 2);
+		if (idx+stride < len) XY[idx] += XY[idx+stride]
+		__syncthreads();
+	}
+
 }
 
 int main(int argc, char ** argv) {
