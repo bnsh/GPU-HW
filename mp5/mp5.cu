@@ -2,18 +2,18 @@
 // Given a list (lst) of length n
 // Output its prefix sum = {lst[0], lst[0] + lst[1], lst[0] + lst[1] + ... + lst[n-1]}
 
-#include	<wb.h>
+#include <wb.h>
 
 #define BLOCK_SIZE 512 //@@ You can change this
 
 #define wbCheck(stmt) do {													\
-		cudaError_t err = stmt;											   \
-		if (err != cudaSuccess) {											 \
-			wbLog(ERROR, "Failed to run stmt ", #stmt);					   \
-			wbLog(ERROR, "Got CUDA error ...  ", cudaGetErrorString(err));	\
-			return -1;														\
-		}																	 \
-	} while(0)
+	cudaError_t err = stmt;											   \
+	if (err != cudaSuccess) {											 \
+		wbLog(ERROR, "Failed to run stmt ", #stmt);					   \
+		wbLog(ERROR, "Got CUDA error ...  ", cudaGetErrorString(err));	\
+		return -1;														\
+	}																	 \
+} while(0)
 	
 __global__ void scan(float * input, float * output, int len) {
 	//@@ Modify the body of this function to complete the functionality of
