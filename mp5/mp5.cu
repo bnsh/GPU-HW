@@ -14,8 +14,14 @@
 		return -1;														\
 	}																	 \
 } while(0)
+
+__global__ void update(const float *endpoints, float *output, int len) {
+// So, if blockIdx.x > 0 we want to add endpoints[blockIdx.x-1] to _each_ value of output.
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	if ((blockIdx.x > 0) && (idx < len)) output[idx] += endpoints[blockIdx.x-1];
+}
 	
-__global__ void scan(float * input, float * output, float *endvalues, int len) {
+__global__ void scan(const float * input, float * output, float *endvalues, int len) {
 	//@@ Modify the body of this function to complete the functionality of
 	//@@ the scan on the device
 	//@@ You may need multiple kernel calls; write your kernels before this
@@ -39,7 +45,7 @@ __global__ void scan(float * input, float * output, float *endvalues, int len) {
 	}
 	if (i < len) output[i] = XY[threadIdx.x];
 	__syncthreads();
-	if (threadIdx.x == 0) endvalues[blockIdx.x] = output[blockIdx.x-1];
+	if ((endvalues != NULL) && (threadIdx.x == 0)) endvalues[blockIdx.x] = output[blockIdx.x-1];
 }
 
 int main(int argc, char ** argv) {
@@ -48,6 +54,7 @@ int main(int argc, char ** argv) {
 	float * hostOutput; // The output list
 	float * deviceInput;
 	float * deviceOutput;
+	float * deviceEndpoints;
 	int numElements; // number of elements in the list
 
 	args = wbArg_read(argc, argv);
@@ -79,7 +86,9 @@ int main(int argc, char ** argv) {
 	wbTime_start(Compute, "Performing CUDA computation");
 	//@@ Modify this to complete the functionality of the scan
 	//@@ on the deivce
-	scan<<<gridsz, blocksz>>>(deviceInput, deviceOutput, numElements);
+	scan<<<gridsz, blocksz>>>(deviceInput, deviceOutput, deviceEndpoints, numElements);
+	scan<<<gridsz, blocksz>>>(deviceEndpoints, deviceEndpoints, NULL, gridsz.x);
+	update<<<gridsz, blocksz>>>(deviceEndpoints, deviceOutput, numElements);
 
 	cudaDeviceSynchronize();
 	wbTime_stop(Compute, "Performing CUDA computation");
@@ -89,6 +98,7 @@ int main(int argc, char ** argv) {
 	wbTime_stop(Copy, "Copying output memory to the CPU");
 
 	wbTime_start(GPU, "Freeing GPU Memory");
+	cudaFree(deviceEndpoints);
 	cudaFree(deviceInput);
 	cudaFree(deviceOutput);
 	wbTime_stop(GPU, "Freeing GPU Memory");
