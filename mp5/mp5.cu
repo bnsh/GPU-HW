@@ -15,29 +15,31 @@
 	}																	 \
 } while(0)
 	
-__global__ void scan(float * input, float * output, int len) {
+__global__ void scan(float * input, float * output, float *endvalues, int len) {
 	//@@ Modify the body of this function to complete the functionality of
 	//@@ the scan on the device
 	//@@ You may need multiple kernel calls; write your kernels before this
 	//@@ function and call them from here
 	__shared__ float XY[BLOCK_SIZE];
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
-	if (i < len) XY[i] = input[i];
+	if (i < len) XY[threadIdx.x] = input[i];
 	__syncthreads();
 
 	for (int stride = 1; stride < blockDim.x; stride *= 2) {
 		// We start at 2 * stride - 1 and for each threadIdx.x we add a 2*stride
 		int idx = (2 * stride - 1) + (threadIdx.x * stride * 2);
-		if (idx < len) XY[idx] += XY[idx-stride];
+		if (idx < BLOCK_SIZE) XY[idx] += XY[idx-stride];
 		__syncthreads();
 	}
 
 	for (int stride = blockDim.x / 4; stride > 0; stride /= 2) {
 		int idx = (3 * stride - 1) + (threadIdx.x * 2 * stride);
-		if (idx < len) XY[idx] += XY[idx-stride];
+		if (idx < BLOCK_SIZE) XY[idx] += XY[idx-stride];
 		__syncthreads();
 	}
 	if (i < len) output[i] = XY[threadIdx.x];
+	__syncthreads();
+	if (threadIdx.x == 0) endvalues[blockIdx.x] = output[blockIdx.x-1];
 }
 
 int main(int argc, char ** argv) {
