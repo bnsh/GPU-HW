@@ -21,7 +21,7 @@ __global__ void update(const float *endpoints, float *output, int len) {
 	if ((blockIdx.x > 0) && (idx < len)) output[idx] += endpoints[blockIdx.x-1];
 }
 	
-__global__ void scan(const float * input, float * output, float *endvalues, int len) {
+__global__ void scan(const float * input, float * output, float *endpoints, int len) {
 	//@@ Modify the body of this function to complete the functionality of
 	//@@ the scan on the device
 	//@@ You may need multiple kernel calls; write your kernels before this
@@ -45,7 +45,7 @@ __global__ void scan(const float * input, float * output, float *endvalues, int 
 	}
 	if (i < len) output[i] = XY[threadIdx.x];
 	__syncthreads();
-	if ((endvalues != NULL) && (threadIdx.x == 0)) endvalues[blockIdx.x] = output[blockIdx.x-1];
+	if ((endpoints != NULL) && (threadIdx.x == 0)) endpoints[blockIdx.x] = XY[blockDim.x-1];
 }
 
 int main(int argc, char ** argv) {
@@ -85,6 +85,7 @@ int main(int argc, char ** argv) {
 
 	wbTime_start(Compute, "Performing CUDA computation");
 	//@@ Modify this to complete the functionality of the scan
+	wbCheck(cudaMalloc((void **)&deviceEndpoints, sizeof(float)* gridsz.x));
 	//@@ on the deivce
 	scan<<<gridsz, blocksz>>>(deviceInput, deviceOutput, deviceEndpoints, numElements);
 	scan<<<gridsz, blocksz>>>(deviceEndpoints, deviceEndpoints, NULL, gridsz.x);
