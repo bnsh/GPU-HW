@@ -17,7 +17,7 @@ def timing(i):
 
 def main(argv):
 	rv = { }
-	for i in xrange(2, 1024):
+	for i in xrange(2, 4096):
 		rv[i] = timing(i)
 	print json.dumps(rv, indent=8)
 
