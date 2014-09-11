@@ -16,9 +16,13 @@ def timing(i):
 	
 
 def main(argv):
+	iters = 4096
+	if len(argv) > 0:
+		iters = atoi(argv[0])
 	rv = { }
-	for i in xrange(2, 4096):
+	for i in xrange(1, 1+iters):
 		rv[i] = timing(i)
+		sys.stderr.write("%5d/%5d %13.7f\r" % (i, iters, rv[i]))
 	print json.dumps(rv, indent=8)
 
 if __name__ == "__main__":
