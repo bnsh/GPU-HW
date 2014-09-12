@@ -116,7 +116,7 @@ int main(int argc, char ** argv) {
 	//@@ Copy memory to the GPU here
 	wbCheck(cudaMemcpy(deviceA, hostA, (sizeof(float) * numARows * numAColumns), cudaMemcpyHostToDevice));
 	wbCheck(cudaMemcpy(deviceB, hostB, (sizeof(float) * numBRows * numBColumns), cudaMemcpyHostToDevice));
-	wbCheck(cudaMemcpy(deviceC, hostC, (sizeof(float) * numBRows * numBColumns), cudaMemcpyHostToDevice));
+	wbCheck(cudaMemcpy(deviceC, hostC, (sizeof(float) * numCRows * numCColumns), cudaMemcpyHostToDevice));
 
 	wbTime_stop(GPU, "Copying input memory to the GPU.");
 	
