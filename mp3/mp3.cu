@@ -41,10 +41,10 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 		__syncthreads();
 	}
 
-	int Cr = Ar;
-	int Cc = Bc;
-	int Cidx = (Cr + threadIdx.y) * numCColumns + (Cc + threadIdx.x);
-	C[Cidx] = Cvalue;
+	int Cr = Ar + threadIdx.y;
+	int Cc = Bc + threadIdx.x;
+	int Cidx = Cr * numCColumns + Cc;
+	if ((Cr < numCRows) && (Cc < numCColumns)) C[Cidx] = Cvalue;
 }
 
 static float *myImport(const char *fn, int *rows, int *cols) __attribute__((unused));
