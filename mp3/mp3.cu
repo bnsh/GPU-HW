@@ -1,5 +1,5 @@
 #include <sys/stat.h>
-#include	<wb.h>
+#include <wb.h>
 
 #define TILE_WIDTH (16)
 #define wbCheck(stmt) do {													\
@@ -18,8 +18,8 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 						 int numCRows, int numCColumns) {
 	//@@ Insert code to implement matrix multiplication here
 	//@@ You have to use shared memory for this MP
-	__shared__ float Atile[2 * TILE_WIDTH * TILE_WIDTH];
-	float *Btile = Atile + TILE_WIDTH * TILE_WIDTH;
+	__shared__ float Atile[TILE_WIDTH][TILE_WIDTH];
+	__shared__ float Btile[TILE_WIDTH][TILE_WIDTH];
 
 	int Ar = blockIdx.y * blockDim.y;
 	int Bc = blockIdx.x * blockDim.x;
@@ -31,12 +31,17 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 		int Br = tile * TILE_WIDTH;
 		int Bidx = (Br+threadIdx.y) * numBColumns + (Bc + threadIdx.x);
 
-		Atile[threadIdx.y * TILE_WIDTH + threadIdx.x] = A[Aidx];
-		Btile[threadIdx.y * TILE_WIDTH + threadIdx.x] = B[Bidx];
+		Atile[threadIdx.y][threadIdx.x] = A[Aidx];
+		Btile[threadIdx.y][threadIdx.x] = B[Bidx];
 		__syncthreads();
 		for (int i = 0; i < TILE_WIDTH; ++i) {
 			// Interesting. An array out of bounds _READ_ causes memory faults.
-			Cvalue += Atile[threadIdx.y * TILE_WIDTH + i] * Btile[i * TILE_WIDTH + threadIdx.x];
+			if (
+				((Ar + threadIdx.y) < numARows) &&
+				((Ac + i) < numAColumns) &&
+				((Br + i) < numBRows) &&
+				((Bc + threadIdx.x) < numBColumns)
+			) Cvalue += Atile[threadIdx.y][i] * Btile[i][threadIdx.x];
 		}
 		__syncthreads();
 	}
