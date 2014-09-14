@@ -65,6 +65,9 @@ __global__ void convolve(
 			s[2] += cpy[sy][sx][2] * maskData[my * maskColumns + mx];
 		}
 	}
+	if (s[0] < 0.0) s[0] = 0.0; if (s[0] > 1.0) s[0] = 1.0;
+	if (s[1] < 0.0) s[1] = 0.0; if (s[1] > 1.0) s[1] = 1.0;
+	if (s[2] < 0.0) s[2] = 0.0; if (s[2] > 1.0) s[2] = 1.0;
 	outputImageData[realy * imageWidth * 3 + realx * 3 + 0] = s[0];
 	outputImageData[realy * imageWidth * 3 + realx * 3 + 1] = s[1];
 	outputImageData[realy * imageWidth * 3 + realx * 3 + 2] = s[2];
