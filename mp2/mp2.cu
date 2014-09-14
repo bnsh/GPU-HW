@@ -18,6 +18,7 @@ __global__ void matrixMultiply(float * A, float * B, float * C,
 	//@@ Insert code to implement matrix multiplication here
 	int ar = blockIdx.x * blockDim.x + threadIdx.x;
 	int bc = blockIdx.y * blockDim.y + threadIdx.y;
+	int cidx = ar * numCColumns + bc;
 
 	if ((ar < numARows) && (bc < numBColumns)) {
 		float v = 0;
@@ -26,7 +27,6 @@ __global__ void matrixMultiply(float * A, float * B, float * C,
 			int bidx =  i * numBColumns + bc;
 			v += (A[aidx] * B[bidx]);
 		}
-		int cidx = ar * numCColumns + bc;
 		C[cidx] = v;
 	}
 }
@@ -78,8 +78,8 @@ int main(int argc, char ** argv) {
 	wbTime_stop(GPU, "Copying input memory to the GPU.");
 	
 	//@@ Initialize the grid and block dimensions here
-	dim3 gridsz(((numCRows-1)/32)*32, (((numCColumns-1)/32)*32));
-	dim3 blocksz(32,32);
+	dim3 blocksz(32,32,1);
+	dim3 gridsz(((numCRows-1)/blocksz.x)+1, (((numCColumns-1)/blocksz.y)+1),1);
 	
 	wbTime_start(Compute, "Performing CUDA computation");
 	//@@ Launch the GPU Kernel here
