@@ -10,6 +10,7 @@
 		}																	 \
 	} while(0)
 
+const int BLOCKSZ = 32;
 #define Mask_width  5
 #define Mask_radius Mask_width/2
 
@@ -19,6 +20,10 @@ __global__ void convolve(
 	int maskRows, int maskColumns, const float *maskData,
 	float *outputImageData
 ) {
+/*
+ * OK, so 
+ */
+	__shared__ float cpy[BLOCKSZ+2*Mask_radius][BLOCKSZ+2*Mask_radius]
 }
 
 
@@ -83,7 +88,7 @@ int main(int argc, char* argv[]) {
 
 	wbTime_start(Compute, "Doing the computation on the GPU");
 	//@@ INSERT CODE HERE
-	dim3 blocksz(32,32,1);
+	dim3 blocksz(BLOCKSZ,BLOCKSZ,1);
 	dim3 gridsz((((imageWidth-1)/blocksz.x)+1), (((imageHeight-1)/blocksz.y)+1),1);
 
 	convolve<<<gridsz, blocksz>>>(
