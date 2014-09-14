@@ -126,6 +126,8 @@ def main():
 	pretty_wb(0, grab_events(s))
 	if (s["solution_exists"] and (not s["solution"]["correctq"])):
 		print "Solution incorrect"
+		if "message" in s["solution"]:
+			print s["solution"]["message"]
 		return 1
 	elif (s["solution_exists"] and s["solution"]["correctq"]):
 		print "Solution correct!"

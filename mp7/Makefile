@@ -27,7 +27,7 @@ OBJS=$(CSRCS:C=o) $(NVSRCS:cu=o)
 BINS=\
 	mp$(ASSIGNMENT_NUMBER) \
 
-TEST_OUTPUT=$(wildcard data/*/output.raw)
+TEST_OUTPUT=$(sort $(wildcard data/*/output.raw))
 TEST_INPUTS=$(TEST_OUTPUT:output.raw=input0.raw) $(TEST_OUTPUT:output.raw=input1.raw)
 TEST_ACTUAL=$(TEST_OUTPUT:output.raw=generated.raw)
 
