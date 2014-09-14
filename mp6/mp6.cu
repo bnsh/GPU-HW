@@ -23,7 +23,7 @@ __global__ void convolve(
 /*
  * OK, so we're loading the copy first.
  */
-	__shared__ float cpy[BLOCKSZ+2*Mask_radius][BLOCKSZ+2*Mask_radius];
+	__shared__ float cpy[BLOCKSZ+2*Mask_radius][BLOCKSZ+2*Mask_radius][3];
 
 	int realx = blockIdx.x * blockDim.x + threadIdx.x;
 	int realy = blockIdx.y * blockDim.y + threadIdx.y;
@@ -34,9 +34,40 @@ __global__ void convolve(
 		for (int dx = -Mask_radius; dx <= Mask_radius; ++dx) {
 			int srcx = realx + dx;
 			int dstx = threadIdx.x - dx + Mask_radius;
-			
+
+			if (
+				(0 <= srcx) && (srcx < imageWidth) &&
+				(0 <= srcy) && (srcy < imageHeight)
+			) {
+				cpy[dsty][dstx][0] = imageData[srcy*imageWidth*3+srcx*3+0];
+				cpy[dsty][dstx][1] = imageData[srcy*imageWidth*3+srcx*3+1];
+				cpy[dsty][dstx][2] = imageData[srcy*imageWidth*3+srcx*3+2];
+			}
+			else {
+				cpy[dsty][dstx][0] = 5.0;
+				cpy[dsty][dstx][1] = 5.0;
+				cpy[dsty][dstx][2] = 5.0;
+			}
 		}
 	}
+	__syncthreads();
+
+// OK, now we have to do the actual convolution.
+	float s[3] = {0.0,0.0,0.0};
+	for (int dy = -Mask_radius; dy <= Mask_radius; ++dy) {
+		int sy = threadIdx.y + dy;
+		int my = dy + Mask_radius;
+		for (int dx = -Mask_radius; dx <= Mask_radius; ++dx) {
+			int sx = threadIdx.x + dy;
+			int mx = dx + Mask_radius;
+			s[0] += cpy[sy][sx][0] * maskData[my * maskColumns + mx];
+			s[1] += cpy[sy][sx][1] * maskData[my * maskColumns + mx];
+			s[2] += cpy[sy][sx][2] * maskData[my * maskColumns + mx];
+		}
+	}
+	outputImageData[realy * imageWidth * 3 + realx * 3 + 0] = s[0];
+	outputImageData[realy * imageWidth * 3 + realx * 3 + 1] = s[1];
+	outputImageData[realy * imageWidth * 3 + realx * 3 + 2] = s[2];
 }
 
 
