@@ -25,7 +25,8 @@ __global__ void matrixMultiplyShared(const float * A, const float * B, float * C
 	int Bc = blockIdx.x * blockDim.x + threadIdx.x;
 
 	float Cvalue = 0.0;
-	for (int tile = 0; tile < (1+((numAColumns-1)/TILE_WIDTH)); ++tile) {
+	int numtiles = (1+((numAColumns-1)/TILE_WIDTH));
+	for (int tile = 0; tile < numtiles; ++tile) {
 		int Ac = tile * TILE_WIDTH;
 		int Aidx = Ar * numAColumns + (Ac + threadIdx.x);
 		int Br = tile * TILE_WIDTH;
