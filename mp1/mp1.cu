@@ -47,13 +47,11 @@ int main(int argc, char ** argv) {
 	
 	//@@ Initialize the grid and block dimensions here
 	dim3 blocksz(16,1,1);
-	dim3 threadsz(16,1,1);
-
-
+	dim3 gridsz(((inputLength-1)/blocksz.x)+1,1,1);
 	
 	wbTime_start(Compute, "Performing CUDA computation");
 	//@@ Launch the GPU Kernel here
-	vecAdd<<<blocksz,threadsz>>>(deviceInput1, deviceInput2, deviceOutput, inputLength);
+	vecAdd<<<gridsz,blocksz>>>(deviceInput1, deviceInput2, deviceOutput, inputLength);
 
 	cudaThreadSynchronize();
 	wbTime_stop(Compute, "Performing CUDA computation");

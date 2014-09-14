@@ -17,6 +17,7 @@ INCLUDES=-I../wb/
 CSRCS=\
 
 ASSIGNMENT_NUMBER=1
+MODE=vector
 
 NVSRCS=\
 	mp$(ASSIGNMENT_NUMBER).cu \
@@ -26,7 +27,6 @@ OBJS=$(CSRCS:C=o) $(NVSRCS:cu=o)
 BINS=\
 	mp$(ASSIGNMENT_NUMBER) \
 
-MODE=vector
 TEST_OUTPUT=$(wildcard data/*/output.raw)
 TEST_INPUTS=$(TEST_OUTPUT:output.raw=input0.raw) $(TEST_OUTPUT:output.raw=input1.raw)
 TEST_ACTUAL=$(TEST_OUTPUT:output.raw=generated.raw)
@@ -44,9 +44,8 @@ push:
 mp$(ASSIGNMENT_NUMBER): mp$(ASSIGNMENT_NUMBER).o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
-data/%/generated.raw: all data/%/output.raw data/%/input0.raw data/%/input1.raw
-	echo $(@)
-	echo data/$*/input0.raw
+data/%/generated.raw: $(OBJS) $(BINS) data/%/output.raw data/%/input0.raw data/%/input1.raw
+	./mp$(ASSIGNMENT_NUMBER) -t $(MODE) -i "`printf %s,%s data/$*/input0.raw data/$*/input1.raw`" -e data/$*/output.raw -o $(@) | /usr/bin/python ../wb/unwb
 
 %.o: %.cu
 	$(NVCC) -c $(NVCCFLAGS) $(INCLUDES) $(^) -o $(@)
