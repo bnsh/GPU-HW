@@ -14,6 +14,12 @@
 #define Mask_radius Mask_width/2
 
 //@@ INSERT CODE HERE
+__global__ void convolve(
+	int imageWidth, int imageHeight, int imageChannels, const float *imageData,
+	int maskRows, int maskColumns, const float *maskData,
+	float *outputImageData
+) {
+}
 
 
 int main(int argc, char* argv[]) {
@@ -77,6 +83,14 @@ int main(int argc, char* argv[]) {
 
 	wbTime_start(Compute, "Doing the computation on the GPU");
 	//@@ INSERT CODE HERE
+	dim3 blocksz(32,32,1);
+	dim3 gridsz((((imageWidth-1)/blocksz.x)+1), (((imageHeight-1)/blocksz.y)+1),1);
+
+	convolve<<<gridsz, blocksz>>>(
+		imageWidth, imageHeight, imageChannels, deviceInputImageData,
+		maskRows, maskColumns, deviceMaskData,
+		deviceOutputImageData);
+
 	wbTime_stop(Compute, "Doing the computation on the GPU");
 
 
