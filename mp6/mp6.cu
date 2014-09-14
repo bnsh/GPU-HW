@@ -55,19 +55,14 @@ __global__ void convolve(
 // OK, now we have to do the actual convolution.
 	float s[3] = {0.0,0.0,0.0};
 	for (int dy = -Mask_radius; dy <= Mask_radius; ++dy) {
-		int sy = threadIdx.y + dy;
+		int sy = threadIdx.y + dy + Mask_radius;
 		int my = dy + Mask_radius;
 		for (int dx = -Mask_radius; dx <= Mask_radius; ++dx) {
-			int sx = threadIdx.x + dy;
+			int sx = threadIdx.x + dy + Mask_radius;
 			int mx = dx + Mask_radius;
-/*
 			s[0] += cpy[sy][sx][0] * maskData[my * maskColumns + mx];
 			s[1] += cpy[sy][sx][1] * maskData[my * maskColumns + mx];
 			s[2] += cpy[sy][sx][2] * maskData[my * maskColumns + mx];
- */
-			s[0] = 100.0 * maskData[my * maskColumns + mx];
-			s[1] = 100.0 * maskData[my * maskColumns + mx];
-			s[2] = 100.0 * maskData[my * maskColumns + mx];
 		}
 	}
 	outputImageData[realy * imageWidth * 3 + realx * 3 + 0] = s[0];
