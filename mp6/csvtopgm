@@ -1,0 +1,58 @@
+#! /usr/bin/python
+
+import sys
+
+def process(fn):
+	inputfn = fn
+	outputfn = fn.replace(".csv", ".pgm")
+	mask = []
+	with open(inputfn, "r") as fp:
+		lines = fp.readlines()
+		for line in lines:
+			m = line.split(',')
+			m = [float(x) for x in m]
+			mask.append(m)
+	"""
+       Here is a sample convolution file; it does a simple average of the nine immediate neighbors, resulting in a smoothed image:
+           P2
+           3 3
+           18
+           10 10 10
+           10 10 10
+           10 10 10
+
+       To see how this works, do the above-mentioned offset: 10 - 18/2 gives 1.  The possible range of values is from 0 to 18, and after the offset that's -9 to 9.  The normalization step makes the range -1 to 1, and the values get scaled correspondingly so they become 1/9  -  exactly  what  you  want.   The
+       equivalent matrix for 5x5 smoothing would have maxval 50 and be filled with 26.
+	"""
+	with open(outputfn, "w") as fp:
+		# So, if sz = 18
+		# This scaled becomes (x - sz / 2) / (sz/2) = 2x/sz - 1 ?
+		# if we want 2x / sz - 1 == 1/9
+		# 2x / sz = 10/9
+		# 2x = 180/9
+		# x = 90/9 = 10 check.
+		# So, normalized = 2x/sz - 1
+		# normalized + 1 = 2x / sz
+		# sz * (normalized+1) = 2x
+		# sz * (normalized + 1) / 2 = x
+		sz = 10000
+		fp.write("P2\n")
+		fp.write("%d %d\n" % (len(mask), len(mask[0])))
+		fp.write("%d\n" % (sz))
+		for m in mask:
+			first = True
+			for i in m:
+				if not first:
+					fp.write(" ")
+				x = sz * (1.0 + i) / 2.0
+				fp.write("%d" % (int(x)))
+				first = False
+			fp.write("\n")
+
+
+def main(argv):
+	for fn in argv:
+		process(fn)
+
+if __name__ == "__main__":
+	main(sys.argv[1:])

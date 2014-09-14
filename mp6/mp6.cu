@@ -44,9 +44,9 @@ __global__ void convolve(
 				cpy[dsty][dstx][2] = imageData[srcy*imageWidth*3+srcx*3+2];
 			}
 			else {
-				cpy[dsty][dstx][0] = 0.5;
-				cpy[dsty][dstx][1] = 0.5;
-				cpy[dsty][dstx][2] = 0.5;
+				cpy[dsty][dstx][0] = 0.0;
+				cpy[dsty][dstx][1] = 0.0;
+				cpy[dsty][dstx][2] = 0.0;
 			}
 		}
 	}
@@ -176,6 +176,7 @@ int main(int argc, char* argv[]) {
 
 	wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
 
+	fprintf(stderr, "image = (w=%d x h=%d, c=%d)\n", imageWidth, imageHeight, imageChannels);
 	dump("debug/input.m", "input", imageHeight, imageWidth, imageChannels, hostInputImageData);
 	dump("debug/output.m", "output", imageHeight, imageWidth, imageChannels, hostOutputImageData);
 
