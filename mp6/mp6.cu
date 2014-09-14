@@ -44,9 +44,9 @@ __global__ void convolve(
 				cpy[dsty][dstx][2] = imageData[srcy*imageWidth*3+srcx*3+2];
 			}
 			else {
-				cpy[dsty][dstx][0] = 0.0;
-				cpy[dsty][dstx][1] = 0.0;
-				cpy[dsty][dstx][2] = 0.0;
+				cpy[dsty][dstx][0] = 0.5;
+				cpy[dsty][dstx][1] = 0.5;
+				cpy[dsty][dstx][2] = 0.5;
 			}
 		}
 	}
@@ -58,7 +58,7 @@ __global__ void convolve(
 		int sy = threadIdx.y + dy + Mask_radius;
 		int my = dy + Mask_radius;
 		for (int dx = -Mask_radius; dx <= Mask_radius; ++dx) {
-			int sx = threadIdx.x + dy + Mask_radius;
+			int sx = threadIdx.x + dx + Mask_radius;
 			int mx = dx + Mask_radius;
 			s[0] += cpy[sy][sx][0] * maskData[my * maskColumns + mx];
 			s[1] += cpy[sy][sx][1] * maskData[my * maskColumns + mx];
@@ -82,7 +82,7 @@ static void dump(const char *fn, const char *label, int height, int width, int c
 			fprintf(fp, "\n{");
 			for (int j = 0; j < width; ++j) {
 				if (j) fprintf(fp, ",");
-				fprintf(fp, " %.7f, %.7f, %.7f    ",
+				fprintf(fp, " %.2f, %.2f, %.2f    ",
 					data[i*3*width+j*3+0],
 					data[i*3*width+j*3+1],
 					data[i*3*width+j*3+2]
