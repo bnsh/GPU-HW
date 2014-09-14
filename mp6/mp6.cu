@@ -25,8 +25,18 @@ __global__ void convolve(
  */
 	__shared__ float cpy[BLOCKSZ+2*Mask_radius][BLOCKSZ+2*Mask_radius];
 
-	int ourx = blockIdx.x * blockDim.x + threadIdx.x;
-	int oury = blockIdx.y * blockDim.y + threadIdx.y;
+	int realx = blockIdx.x * blockDim.x + threadIdx.x;
+	int realy = blockIdx.y * blockDim.y + threadIdx.y;
+
+	for (int dy = -Mask_radius; dy <= Mask_radius; ++dy) {
+		int srcy = realy + dy;
+		int dsty = threadIdx.y - dy + Mask_radius;
+		for (int dx = -Mask_radius; dx <= Mask_radius; ++dx) {
+			int srcx = realx + dx;
+			int dstx = threadIdx.x - dx + Mask_radius;
+			
+		}
+	}
 }
 
 
