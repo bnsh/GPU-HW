@@ -24,6 +24,9 @@ __global__ void convolve(
  * OK, so we're loading the copy first.
  */
 	__shared__ float cpy[BLOCKSZ+2*Mask_radius][BLOCKSZ+2*Mask_radius];
+
+	int ourx = blockIdx.x * blockDim.x + threadIdx.x;
+	int oury = blockIdx.y * blockDim.y + threadIdx.y;
 }
 
 
