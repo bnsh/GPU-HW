@@ -21,9 +21,9 @@ __global__ void convolve(
 	float *outputImageData
 ) {
 /*
- * OK, so 
+ * OK, so we're loading the copy first.
  */
-	__shared__ float cpy[BLOCKSZ+2*Mask_radius][BLOCKSZ+2*Mask_radius]
+	__shared__ float cpy[BLOCKSZ+2*Mask_radius][BLOCKSZ+2*Mask_radius];
 }
 
 
