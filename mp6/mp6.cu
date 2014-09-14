@@ -73,6 +73,27 @@ __global__ void convolve(
 	outputImageData[realy * imageWidth * 3 + realx * 3 + 2] = s[2];
 }
 
+static void dump(const char *fn, const char *label, int height, int width, int channels, const float *data) {
+	FILE *fp = fopen(fn, "w");
+	if (fp) {
+		fprintf(fp, "%s = {", label);
+		for (int i = 0; i < height; ++i) {
+			if (i) fprintf(fp, ",");
+			fprintf(fp, "\n{");
+			for (int j = 0; j < width; ++j) {
+				if (j) fprintf(fp, ",");
+				fprintf(fp, " %.7f, %.7f, %.7f    ",
+					data[i*3*width+j*3+0],
+					data[i*3*width+j*3+1],
+					data[i*3*width+j*3+2]
+				);
+			}
+			fprintf(fp, "}");
+		}
+		fprintf(fp, "\n};\n");
+		fclose(fp); fp = NULL;
+	}
+}
 
 int main(int argc, char* argv[]) {
 	wbArg_t args;
@@ -154,6 +175,9 @@ int main(int argc, char* argv[]) {
 	wbTime_stop(Copy, "Copying data from the GPU");
 
 	wbTime_stop(GPU, "Doing GPU Computation (memory + compute)");
+
+	dump("debug/input.m", "input", imageHeight, imageWidth, imageChannels, hostInputImageData);
+	dump("debug/output.m", "output", imageHeight, imageWidth, imageChannels, hostOutputImageData);
 
 	wbSolution(args, outputImage);
 
