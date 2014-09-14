@@ -30,10 +30,10 @@ __global__ void convolve(
 
 	for (int dy = -Mask_radius; dy <= Mask_radius; ++dy) {
 		int srcy = realy + dy;
-		int dsty = threadIdx.y - dy + Mask_radius;
+		int dsty = threadIdx.y + dy + Mask_radius;
 		for (int dx = -Mask_radius; dx <= Mask_radius; ++dx) {
 			int srcx = realx + dx;
-			int dstx = threadIdx.x - dx + Mask_radius;
+			int dstx = threadIdx.x + dx + Mask_radius;
 
 			if (
 				(0 <= srcx) && (srcx < imageWidth) &&
@@ -44,9 +44,9 @@ __global__ void convolve(
 				cpy[dsty][dstx][2] = imageData[srcy*imageWidth*3+srcx*3+2];
 			}
 			else {
-				cpy[dsty][dstx][0] = 5.0;
-				cpy[dsty][dstx][1] = 5.0;
-				cpy[dsty][dstx][2] = 5.0;
+				cpy[dsty][dstx][0] = 0.0;
+				cpy[dsty][dstx][1] = 0.0;
+				cpy[dsty][dstx][2] = 0.0;
 			}
 		}
 	}
@@ -60,9 +60,14 @@ __global__ void convolve(
 		for (int dx = -Mask_radius; dx <= Mask_radius; ++dx) {
 			int sx = threadIdx.x + dy;
 			int mx = dx + Mask_radius;
+/*
 			s[0] += cpy[sy][sx][0] * maskData[my * maskColumns + mx];
 			s[1] += cpy[sy][sx][1] * maskData[my * maskColumns + mx];
 			s[2] += cpy[sy][sx][2] * maskData[my * maskColumns + mx];
+ */
+			s[0] = 100.0 * maskData[my * maskColumns + mx];
+			s[1] = 100.0 * maskData[my * maskColumns + mx];
+			s[2] = 100.0 * maskData[my * maskColumns + mx];
 		}
 	}
 	outputImageData[realy * imageWidth * 3 + realx * 3 + 0] = s[0];
