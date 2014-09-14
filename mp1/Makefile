@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-g3 -O0 -Wall -Werror -DWB_USE_CUSTOM_MALLOC
+CFLAGS=-g3 -O3 -Wall -Werror -DWB_USE_CUSTOM_MALLOC
 CLIBS=
 
 # Binesh - Don't ask. Ugh.

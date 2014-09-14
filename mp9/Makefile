@@ -1,5 +1,5 @@
 CC=g++
-CFLAGS=-g3 -O0 -Wall -Werror -DWB_USE_CUSTOM_MALLOC
+CFLAGS=-g3 -O3 -Wall -Werror -DWB_USE_CUSTOM_MALLOC
 CLIBS=
 
 # Binesh - Don't ask. Ugh.
@@ -17,6 +17,7 @@ INCLUDES=-I../wb/
 CSRCS=\
 
 ASSIGNMENT_NUMBER=9
+MODE=vector
 
 NVSRCS=\
 	mp$(ASSIGNMENT_NUMBER).cu \
@@ -26,7 +27,6 @@ OBJS=$(CSRCS:C=o) $(NVSRCS:cu=o)
 BINS=\
 	mp$(ASSIGNMENT_NUMBER) \
 
-MODE=vector
 TEST_OUTPUT=$(wildcard data/*/output.raw)
 TEST_INPUTS=$(TEST_OUTPUT:output.raw=input0.raw) $(TEST_OUTPUT:output.raw=input1.raw)
 TEST_ACTUAL=$(TEST_OUTPUT:output.raw=generated.raw)
