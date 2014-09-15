@@ -42,10 +42,10 @@ test: $(TEST_ACTUAL)
 push:
 	/usr/bin/rsync -avz -e ssh --progress --delete $(HOME)/classes/hetero/mp$(ASSIGNMENT_NUMBER)/ som.hex21.com:classes/hetero/mp$(ASSIGNMENT_NUMBER)/
 
-mp-fast: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-fast-kernel.o
+mp$(ASSIGNMENT_NUMBER)-fast: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-fast-kernel.o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
-mp-slow: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-slow-kernel.o
+mp$(ASSIGNMENT_NUMBER)-slow: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-slow-kernel.o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
 data/%/generated.raw: $(OBJS) $(BINS) data/%/output.raw data/%/input0.raw data/%/input1.raw

@@ -11,6 +11,12 @@
 		}																	 \
 	} while(0)
 
+extern __global__ void matrixMultiplyShared(
+	const float *A, const float *B, float *C,
+	int numARows, int numAColumns,
+	int numBRows, int numBColumns,
+	int numCRows, int numCColumns);
+
 static float *myImport(const char *fn, int *rows, int *cols) __attribute__((unused));
 static float *myImport(const char *fn, int *rows, int *cols) {
 	float *rv = NULL;
