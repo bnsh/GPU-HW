@@ -21,6 +21,8 @@ MODE=matrix
 
 NVSRCS=\
 	mp$(ASSIGNMENT_NUMBER).cu \
+	mp$(ASSIGNMENT_NUMBER)-fast-kernel.cu \
+	mp$(ASSIGNMENT_NUMBER)-slow-kernel.cu \
 
 OBJS=$(CSRCS:C=o) $(NVSRCS:cu=o)
 
