@@ -30,16 +30,19 @@ BINS=\
 
 TEST_OUTPUT=$(sort $(wildcard data/*/output.ppm))
 TEST_INPUTS=$(TEST_OUTPUT:output.ppm=input0.ppm) $(TEST_OUTPUT:output.ppm=input1.csv)
-TEST_ACTUAL=\
-	$(TEST_OUTPUT:output.ppm=generated-orig.ppm) \
-	$(TEST_OUTPUT:output.ppm=generated-simpler.ppm) \
+TEST_ORIG= $(TEST_OUTPUT:output.ppm=generated-orig.ppm)
+TEST_SIMPLER= $(TEST_OUTPUT:output.ppm=generated-simpler.ppm)
 
 all: $(OBJS) $(BINS)
 
 clean:
 	/bin/rm -f $(BINS) $(OBJS)
 
-test: $(TEST_ACTUAL)
+test: test-orig test-simpler
+
+test-orig: $(TEST_ORIG)
+
+test-simpler: $(TEST_SIMPLER)
 
 push:
 	/usr/bin/rsync -avz -e ssh --progress --delete $(HOME)/classes/hetero/mp$(ASSIGNMENT_NUMBER)/ som.hex21.com:classes/hetero/mp$(ASSIGNMENT_NUMBER)/
