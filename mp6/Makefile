@@ -30,7 +30,9 @@ BINS=\
 
 TEST_OUTPUT=$(sort $(wildcard data/*/output.ppm))
 TEST_INPUTS=$(TEST_OUTPUT:output.ppm=input0.ppm) $(TEST_OUTPUT:output.ppm=input1.csv)
-TEST_ACTUAL=$(TEST_OUTPUT:output.ppm=generated.ppm)
+TEST_ACTUAL=\
+	$(TEST_OUTPUT:output.ppm=generated-orig.ppm) \
+	$(TEST_OUTPUT:output.ppm=generated-simpler.ppm) \
 
 all: $(OBJS) $(BINS)
 
@@ -48,8 +50,11 @@ mp$(ASSIGNMENT_NUMBER)-orig: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-ori
 mp$(ASSIGNMENT_NUMBER)-simpler: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-simpler.o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
-data/%/generated.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input0.ppm data/%/input1.csv
-	./mp$(ASSIGNMENT_NUMBER) -t $(MODE) -i "`printf %s,%s data/$*/input0.ppm data/$*/input1.csv`" -e data/$*/output.ppm -o $(@) | /usr/bin/python ../wb/unwb
+data/%/generated-orig.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input0.ppm data/%/input1.csv
+	./mp$(ASSIGNMENT_NUMBER)-orig -t $(MODE) -i "`printf %s,%s data/$*/input0.ppm data/$*/input1.csv`" -e data/$*/output.ppm -o $(@) | /usr/bin/python ../wb/unwb
+
+data/%/generated-simpler.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input0.ppm data/%/input1.csv
+	./mp$(ASSIGNMENT_NUMBER)-simpler -t $(MODE) -i "`printf %s,%s data/$*/input0.ppm data/$*/input1.csv`" -e data/$*/output.ppm -o $(@) | /usr/bin/python ../wb/unwb
 
 %.o: %.cu
 	$(NVCC) -c $(NVCCFLAGS) $(INCLUDES) $(^) -o $(@)
