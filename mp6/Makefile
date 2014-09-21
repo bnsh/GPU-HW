@@ -25,7 +25,8 @@ NVSRCS=\
 OBJS=$(CSRCS:C=o) $(NVSRCS:cu=o)
 
 BINS=\
-	mp$(ASSIGNMENT_NUMBER) \
+	mp$(ASSIGNMENT_NUMBER)-orig \
+	mp$(ASSIGNMENT_NUMBER)-simpler \
 
 TEST_OUTPUT=$(sort $(wildcard data/*/output.ppm))
 TEST_INPUTS=$(TEST_OUTPUT:output.ppm=input0.ppm) $(TEST_OUTPUT:output.ppm=input1.csv)
@@ -41,7 +42,10 @@ test: $(TEST_ACTUAL)
 push:
 	/usr/bin/rsync -avz -e ssh --progress --delete $(HOME)/classes/hetero/mp$(ASSIGNMENT_NUMBER)/ som.hex21.com:classes/hetero/mp$(ASSIGNMENT_NUMBER)/
 
-mp$(ASSIGNMENT_NUMBER): mp$(ASSIGNMENT_NUMBER).o
+mp$(ASSIGNMENT_NUMBER)-orig: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-orig.o
+	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
+
+mp$(ASSIGNMENT_NUMBER)-simpler: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-simpler.o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
 data/%/generated.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input0.ppm data/%/input1.csv
