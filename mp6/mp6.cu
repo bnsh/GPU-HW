@@ -10,7 +10,7 @@
 	} \
 } while(0)
 
-const int BLOCKSZ = 16;
+const int BLOCKSZ = 32;
 #define Mask_width  5
 #define Mask_radius Mask_width/2
 
