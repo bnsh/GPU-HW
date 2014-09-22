@@ -28,6 +28,7 @@ BINS=\
 	mp$(ASSIGNMENT_NUMBER)-copy \
 	mp$(ASSIGNMENT_NUMBER)-orig \
 	mp$(ASSIGNMENT_NUMBER)-simpler \
+	pnmdiff \
 
 TEST_OUTPUT=$(sort $(wildcard data/*/output.ppm))
 TEST_INPUTS=$(TEST_OUTPUT:output.ppm=input0.ppm) $(TEST_OUTPUT:output.ppm=input1.csv)
@@ -59,6 +60,9 @@ mp$(ASSIGNMENT_NUMBER)-orig: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-ori
 
 mp$(ASSIGNMENT_NUMBER)-simpler: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-simpler.o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
+
+pnmdiff: pnmdiff.o
+	$(CC) $(CFLAGS) $(^) -o $(@) -lgd -lnetpbm
 
 data/%/generated-copy.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input0.ppm data/%/input1.csv
 	./mp$(ASSIGNMENT_NUMBER)-copy -t $(MODE) -i "`printf %s,%s data/$*/input0.ppm data/$*/input1.csv`" -e data/$*/input0.ppm -o $(@) | /usr/bin/python ../wb/unwb
