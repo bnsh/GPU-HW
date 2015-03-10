@@ -25,7 +25,6 @@ NVSRCS=\
 OBJS=$(CSRCS:C=o) $(NVSRCS:cu=o)
 
 BINS=\
-	mp$(ASSIGNMENT_NUMBER)-copy \
 	mp$(ASSIGNMENT_NUMBER)-orig \
 	mp$(ASSIGNMENT_NUMBER)-simpler \
 	pnmdiff \
@@ -33,7 +32,6 @@ BINS=\
 TEST_OUTPUT=$(sort $(wildcard data/*/output.ppm))
 TEST_INPUTS=$(TEST_OUTPUT:output.ppm=input0.ppm) $(TEST_OUTPUT:output.ppm=input1.csv)
 TEST_ORIG= $(TEST_OUTPUT:output.ppm=generated-orig.ppm)
-TEST_COPY= $(TEST_OUTPUT:output.ppm=generated-copy.ppm)
 TEST_SIMPLER= $(TEST_OUTPUT:output.ppm=generated-simpler.ppm)
 
 all: $(OBJS) $(BINS)
@@ -41,9 +39,7 @@ all: $(OBJS) $(BINS)
 clean:
 	/bin/rm -f $(BINS) $(OBJS)
 
-test: test-copy test-orig test-simpler
-
-test-copy: $(TEST_COPY)
+test: test-orig test-simpler
 
 test-orig: $(TEST_ORIG)
 
@@ -51,9 +47,6 @@ test-simpler: $(TEST_SIMPLER)
 
 push:
 	/usr/bin/rsync -avz -e ssh --progress --delete $(HOME)/classes/hetero/mp$(ASSIGNMENT_NUMBER)/ som.hex21.com:classes/hetero/mp$(ASSIGNMENT_NUMBER)/
-
-mp$(ASSIGNMENT_NUMBER)-copy: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-copy.o
-	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
 mp$(ASSIGNMENT_NUMBER)-orig: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-orig.o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
@@ -63,9 +56,6 @@ mp$(ASSIGNMENT_NUMBER)-simpler: mp$(ASSIGNMENT_NUMBER).o mp$(ASSIGNMENT_NUMBER)-
 
 pnmdiff: pnmdiff.o
 	$(CC) $(CFLAGS) $(^) -o $(@) -lgd -lnetpbm
-
-data/%/generated-copy.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input0.ppm data/%/input1.csv
-	./mp$(ASSIGNMENT_NUMBER)-copy -t $(MODE) -i "`printf %s,%s data/$*/input0.ppm data/$*/input1.csv`" -e data/$*/input0.ppm -o $(@) | /usr/bin/python ../wb/unwb
 
 data/%/generated-orig.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input0.ppm data/%/input1.csv
 	./mp$(ASSIGNMENT_NUMBER)-orig -t $(MODE) -i "`printf %s,%s data/$*/input0.ppm data/$*/input1.csv`" -e data/$*/output.ppm -o $(@) | /usr/bin/python ../wb/unwb
