@@ -44,7 +44,7 @@ push:
 mp$(ASSIGNMENT_NUMBER): mp$(ASSIGNMENT_NUMBER).o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
-data/%/generated.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input.ppm data/%/input1.ppm
+data/%/generated.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input.ppm
 	./mp$(ASSIGNMENT_NUMBER) -t $(MODE) -i data/$*/input.ppm -e data/$*/output.ppm -o $(@) | /usr/bin/python ../wb/unwb
 
 %.o: %.cu

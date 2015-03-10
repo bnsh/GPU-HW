@@ -43,12 +43,32 @@ static float computeCDFofHistogram(int width, int height, const int *histogram, 
 	int ii;
 	float cdfmin;
 	cdf[0] = prob(width, height, histogram[0]);
-	cdfmin = cdf[0]
+	cdfmin = cdf[0];
 	for (ii = 1; ii < 256; ++ii) {
 		cdf[ii] = cdf[ii-1] + prob(width, height, histogram[ii]);
 		if (cdfmin > cdf[ii]) cdfmin = cdf[ii];
 	}
 	return(cdfmin);
+}
+
+static unsigned char correct_color(const float *cdf, float cdfmin, int val) {
+	int rv = (255*(cdf[val] - cdfmin) / (1.0 - cdfmin));
+	if (rv < 0) rv = 0;
+	if (rv > 255) rv = 255;
+	return((unsigned char)rv);
+}
+
+static void applyHistogramEqualization(int width, int height, int channels, const float *cdf, float cdfmin, unsigned char *ucharImage) {
+// TODO: Parallelize
+	int ii;
+	for (ii = 0; ii < (width * height * channels); ++ii) ucharImage[ii] = correct_color(cdf, cdfmin, ucharImage[ii]);
+}
+
+static void castBackToFloat(int width, int height, int channels, const unsigned char *ucharImage, float *outputImage) {
+// TODO: Parallelize
+	int ii;
+	for (ii = 0; ii < (width * height * channels); ++ii)
+		outputImage[ii] = (float)(ucharImage[ii] / 255.0);
 }
 
 int main(int argc, char ** argv) {
@@ -78,17 +98,19 @@ int main(int argc, char ** argv) {
 	imageWidth = wbImage_getWidth(inputImage);
 	imageHeight = wbImage_getHeight(inputImage);
 	imageChannels = wbImage_getChannels(inputImage);
-	hostInputImageData = (float *)(malloc(sizeof(float)*imageWidth*imageHeight*imageChannels));
-	hostOutputImageData = (float *)(malloc(sizeof(float)*imageWidth*imageHeight*imageChannels));
 	ucharImage = (unsigned char *)(malloc(sizeof(unsigned char)*imageWidth*imageHeight*imageChannels));
 	grayImage = (unsigned char *)(malloc(sizeof(unsigned char)*imageWidth*imageHeight));
 	outputImage = wbImage_new(imageWidth, imageHeight, imageChannels);
+	hostInputImageData = wbImage_getData(outputImage);
+	hostOutputImageData = wbImage_getData(outputImage);
 	wbTime_stop(Generic, "Importing data and creating memory on host");
 
 	castFromImageToUnsignedChar(imageWidth, imageHeight, imageChannels, hostInputImageData, ucharImage);
 	convertFromRGBtoGrayScale(imageWidth, imageHeight, ucharImage, grayImage);
 	computeHistogramOfGrayImage(imageWidth, imageHeight, grayImage, histogram);
 	cdfmin = computeCDFofHistogram(imageWidth, imageHeight, histogram, cdf);
+	applyHistogramEqualization(imageWidth, imageHeight, imageChannels, cdf, cdfmin, ucharImage);
+	castBackToFloat(imageWidth, imageHeight, imageChannels, ucharImage, hostOutputImageData);
 
 	//@@ insert code here
 
@@ -97,8 +119,6 @@ int main(int argc, char ** argv) {
 	//@@ insert code here
 	if (grayImage != NULL) free(grayImage); grayImage = NULL;
 	if (ucharImage != NULL) free(ucharImage); ucharImage = NULL;
-	if (hostOutputImageData != NULL) free(hostOutputImageData); hostOutputImageData = NULL;
-	if (hostInputImageData != NULL) free(hostInputImageData); hostInputImageData = NULL;
 
 	return 0;
 }
