@@ -101,7 +101,7 @@ int main(int argc, char ** argv) {
 	ucharImage = (unsigned char *)(malloc(sizeof(unsigned char)*imageWidth*imageHeight*imageChannels));
 	grayImage = (unsigned char *)(malloc(sizeof(unsigned char)*imageWidth*imageHeight));
 	outputImage = wbImage_new(imageWidth, imageHeight, imageChannels);
-	hostInputImageData = wbImage_getData(outputImage);
+	hostInputImageData = wbImage_getData(inputImage);
 	hostOutputImageData = wbImage_getData(outputImage);
 	wbTime_stop(Generic, "Importing data and creating memory on host");
 
