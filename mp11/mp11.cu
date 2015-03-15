@@ -33,7 +33,7 @@ __global__ void computeHistogramOfGrayImage(int width, int height, const unsigne
 	if (threadIdx.x < 256) localhistogram[threadIdx.x] = 0;
 	__syncthreads();
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
-	atomicInc(&localhistogram[grayImage[idx]], 1);
+	if (idx < width * height) atomicInc(&localhistogram[grayImage[idx]], 1);
 	__syncthreads();
 	if (threadIdx.x < 256) atomicAdd(&histogram[threadIdx.x], localhistogram[threadIdx.x]);
 	__syncthreads();
@@ -118,6 +118,26 @@ int main(int argc, char ** argv) {
 
 	castFromImageToUnsignedChar(imageWidth, imageHeight, imageChannels, hostInputImageData, ucharImage);
 	convertFromRGBtoGrayScale(imageWidth, imageHeight, ucharImage, grayImage);
+	{
+		FILE *fp = fopen("/tmp/mp11-gpu.txt", "w");
+		if (fp) {
+			fprintf(fp, "grayImage = {");
+			for (int i = 0; i < imageWidth*imageHeight; ++i) {
+				if (i) fprintf(fp, ",");
+				fprintf(fp, "\n%d", grayImage[i]);
+			}
+			fprintf(fp, "\n}\n");
+
+			fprintf(fp, "histogram = {");
+			for (int i = 0; i < 256; ++i) {
+				if (i) fprintf(fp, ",");
+				fprintf(fp, "\n%d", histogram[i]);
+			}
+			fprintf(fp, "\n}\n");
+
+			fclose(fp); fp = NULL;
+		}
+	}
 	int sz = imageWidth * imageHeight;
 	dim3 blocksz(256, 1, 1);
 	dim3 gridsz(((sz-1) / blocksz.x)+1, 1, 1);
