@@ -28,11 +28,14 @@ static void convertFromRGBtoGrayScale(int width, int height, const unsigned char
 	}
 }
 
-static void computeHistogramOfGrayImage(int width, int height, const unsigned char *grayImage, int *histogram) {
-// TODO: Parallelize
-	int ii;
-	for (ii = 0; ii < 256; ++ii) histogram[ii] = 0;
-	for (ii = 0; ii < (width*height); ++ii) histogram[grayImage[ii]]++;
+__global__ void computeHistogramOfGrayImage(int width, int height, const unsigned char *grayImage, int *histogram) {
+	__shared__ int localhistogram[256];
+	if (threadIdx.x < 256) localhistogram[threadIdx.x] = 0;
+	__syncthreads();
+	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	atomicInc(&localhistogram[grayImage[idx]], 1);
+	__syncthreads();
+	if (threadIdx.x < 256) atomicAdd(&histogram[threadIdx.x], localhistogram[threadIdx.x]);
 }
 
 static float prob(int width, int height, int x) {
@@ -84,6 +87,7 @@ int main(int argc, char ** argv) {
 	unsigned char *ucharImage = NULL;
 	unsigned char *grayImage = NULL;
 	int histogram[HISTOGRAM_LENGTH];
+	int devicehistogram[HISTOGRAM_LENGTH];
 	float cdf[HISTOGRAM_LENGTH];
 	float cdfmin;
 
@@ -107,7 +111,8 @@ int main(int argc, char ** argv) {
 
 	castFromImageToUnsignedChar(imageWidth, imageHeight, imageChannels, hostInputImageData, ucharImage);
 	convertFromRGBtoGrayScale(imageWidth, imageHeight, ucharImage, grayImage);
-	computeHistogramOfGrayImage(imageWidth, imageHeight, grayImage, histogram);
+	for (int i = 0; i < 256; ++i) histogram[i] = 0;
+	computeHistogramOfGrayImage(imageWidth, imageHeight, devicegrayImage, devicehistogram);
 	cdfmin = computeCDFofHistogram(imageWidth, imageHeight, histogram, cdf);
 	applyHistogramEqualization(imageWidth, imageHeight, imageChannels, cdf, cdfmin, ucharImage);
 	castBackToFloat(imageWidth, imageHeight, imageChannels, ucharImage, hostOutputImageData);
