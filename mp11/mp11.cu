@@ -38,13 +38,14 @@ static void computeHistogramOfGrayImage(int width, int height, const unsigned ch
 #else
 __global__ void computeHistogramOfGrayImage(int width, int height, const unsigned char *grayImage, unsigned int *histogram) {
 	__shared__ unsigned int private_histo[256];
-	if (threadIdx.x < 256) private_histo[threadIdx.x] = 1;
+	if (threadIdx.x < 256) private_histo[threadIdx.x] = 0;
 	__syncthreads();
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	int stride = blockDim.x * gridDim.x;
 	int sz = width * height;
 	while (i < sz) {
-		atomicAdd(&private_histo[grayImage[i]], 1);
+		unsigned int ss = (unsigned int)grayImage[i];
+		atomicAdd(&private_histo[ss], 1);
 		i += stride;
 	}
 	__syncthreads();
@@ -145,13 +146,13 @@ int main(int argc, char ** argv) {
 	hostOutputImageData = wbImage_getData(outputImage);
 	cudaMalloc((void **)&devicehistogram, 256 * sizeof(int));
 	cudaMalloc((void **)&devicegrayImage, imageWidth * imageHeight * sizeof(unsigned char));
-	cudaMemcpy(devicegrayImage, grayImage, imageWidth * imageHeight * sizeof(unsigned char), cudaMemcpyHostToDevice);
 	for (int i = 0; i < 256; ++i) histogram[i] = 0;
 	cudaMemcpy(devicehistogram, histogram, 256 * sizeof(int), cudaMemcpyHostToDevice);
 	wbTime_stop(Generic, "Importing data and creating memory on host");
 
 	castFromImageToUnsignedChar(imageWidth, imageHeight, imageChannels, hostInputImageData, ucharImage);
 	convertFromRGBtoGrayScale(imageWidth, imageHeight, ucharImage, grayImage);
+	cudaMemcpy(devicegrayImage, grayImage, imageWidth * imageHeight * sizeof(unsigned char), cudaMemcpyHostToDevice);
 #ifdef SERIAL
 	dump("/tmp/mp11-serial-before.txt", imageWidth, imageHeight, grayImage, histogram);
 	computeHistogramOfGrayImage(imageWidth, imageHeight, grayImage, histogram);
@@ -161,6 +162,9 @@ int main(int argc, char ** argv) {
 	int sz = imageWidth * imageHeight;
 	dim3 blocksz(256, 1, 1);
 	dim3 gridsz(((sz-1) / blocksz.x)+1, 1, 1);
+	fprintf(stderr, "     sz = %d\n", sz);
+	fprintf(stderr, "blocksz = { x=%d, y=%d, z=%d }\n", blocksz.x, blocksz.y, blocksz.z);
+	fprintf(stderr, " gridsz = { x=%d, y=%d, z=%d }\n", gridsz.x, gridsz.y, gridsz.z);
 	computeHistogramOfGrayImage<<<gridsz, blocksz>>>(imageWidth, imageHeight, devicegrayImage, devicehistogram);
 	cudaMemcpy(histogram, devicehistogram, 256 * sizeof(int), cudaMemcpyDeviceToHost);
 	dump("/tmp/mp11-gpu-after.txt", imageWidth, imageHeight, grayImage, histogram);
