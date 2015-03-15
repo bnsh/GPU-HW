@@ -35,7 +35,7 @@ TEST_ACTUAL=$(TEST_OUTPUT:output.ppm=generated.ppm)
 all: $(OBJS) $(BINS)
 
 clean:
-	/bin/rm -f $(BINS) $(OBJS)
+	/bin/rm -f $(BINS) $(OBJS) mp11-serial.o
 
 test: $(TEST_ACTUAL)
 
@@ -55,6 +55,9 @@ data/%/generated.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input.ppm
 
 data/%/serial.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input.ppm
 	./mp$(ASSIGNMENT_NUMBER)-serial -t $(MODE) -i data/$*/input.ppm -e data/$*/output.ppm -o $(@) | /usr/bin/python ../wb/unwb
+
+%-serial.o: %.cu
+	$(NVCC) -DSERIAL -c $(NVCCFLAGS) $(INCLUDES) $(^) -o $(@)
 
 %.o: %.cu
 	$(NVCC) -c $(NVCCFLAGS) $(INCLUDES) $(^) -o $(@)

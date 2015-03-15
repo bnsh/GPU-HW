@@ -28,16 +28,26 @@ static void convertFromRGBtoGrayScale(int width, int height, const unsigned char
 	}
 }
 
+#ifdef SERIAL
+static void computeHistogramOfGrayImage(int width, int height, const unsigned char *grayImage, unsigned int *histogram) {
+// TODO: Parallelize
+	int ii;
+	for (ii = 0; ii < 256; ++ii) histogram[ii] = 0;
+	for (ii = 0; ii < (width*height); ++ii) histogram[grayImage[ii]]++;
+}
+#else
 __global__ void computeHistogramOfGrayImage(int width, int height, const unsigned char *grayImage, unsigned int *histogram) {
 	__shared__ unsigned int localhistogram[256];
 	if (threadIdx.x < 256) localhistogram[threadIdx.x] = 0;
 	__syncthreads();
 	int idx = blockIdx.x * blockDim.x + threadIdx.x;
+	int stride = blockDim.x * gridDim.x;
 	if (idx < width * height) atomicInc(&localhistogram[grayImage[idx]], 1);
 	__syncthreads();
 	if (threadIdx.x < 256) atomicAdd(&histogram[threadIdx.x], localhistogram[threadIdx.x]);
 	__syncthreads();
 }
+#endif
 
 static float prob(int width, int height, int x) {
 	return(((float)x) / (float)(width * height));
@@ -118,8 +128,22 @@ int main(int argc, char ** argv) {
 
 	castFromImageToUnsignedChar(imageWidth, imageHeight, imageChannels, hostInputImageData, ucharImage);
 	convertFromRGBtoGrayScale(imageWidth, imageHeight, ucharImage, grayImage);
+#ifdef SERIAL
+	computeHistogramOfGrayImage(imageWidth, imageHeight, grayImage, histogram);
+#else
+	int sz = imageWidth * imageHeight;
+	dim3 blocksz(256, 1, 1);
+	dim3 gridsz(((sz-1) / blocksz.x)+1, 1, 1);
+	computeHistogramOfGrayImage<<<gridsz, blocksz>>>(imageWidth, imageHeight, devicegrayImage, devicehistogram);
+	cudaMemcpy(histogram, devicehistogram, 256 * sizeof(int), cudaMemcpyDeviceToHost);
+#endif
 	{
-		FILE *fp = fopen("/tmp/mp11-gpu.txt", "w");
+#ifdef SERIAL
+		const char *fn = "/tmp/mp11-serial.txt";
+#else
+		const char *fn = "/tmp/mp11-gpu.txt";
+#endif
+		FILE *fp = fopen(fn, "w");
 		if (fp) {
 			fprintf(fp, "grayImage = {");
 			for (int i = 0; i < imageWidth*imageHeight; ++i) {
@@ -138,11 +162,6 @@ int main(int argc, char ** argv) {
 			fclose(fp); fp = NULL;
 		}
 	}
-	int sz = imageWidth * imageHeight;
-	dim3 blocksz(256, 1, 1);
-	dim3 gridsz(((sz-1) / blocksz.x)+1, 1, 1);
-	computeHistogramOfGrayImage<<<gridsz, blocksz>>>(imageWidth, imageHeight, devicegrayImage, devicehistogram);
-	cudaMemcpy(histogram, devicehistogram, 256 * sizeof(int), cudaMemcpyDeviceToHost);
 	cdfmin = computeCDFofHistogram(imageWidth, imageHeight, histogram, cdf);
 	applyHistogramEqualization(imageWidth, imageHeight, imageChannels, cdf, cdfmin, ucharImage);
 	castBackToFloat(imageWidth, imageHeight, imageChannels, ucharImage, hostOutputImageData);
