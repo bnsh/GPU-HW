@@ -25,9 +25,17 @@ int main(int argc, char ** argv) {
 	cudaMalloc(&deviceInput1, inputLength * sizeof(float));
 	cudaMalloc(&deviceInput2, inputLength * sizeof(float));
 	cudaMalloc(&deviceOutput, inputLength * sizeof(float));
+
+	cudaMemcpy(deviceInput1, hostInput1, inputLength * sizeof(float), cudaMemcpyHostToDevice);
+	cudaMemcpy(deviceInput2, hostInput2, inputLength * sizeof(float), cudaMemcpyHostToDevice);
 	wbTime_stop(Generic, "Importing data and creating memory on host");
 
-
+	const int bsz = 512;
+	dim3 blocksz(bsz, 1, 1);
+	dim3 gridsz(((inputLength-1) / bsz) + 1, 1, 1);
+	
+	vecAdd<<<gridsz, blocksz>>>(deviceInput1, deviceInput2, deviceOutput, inputLength);
+	cudaMemcpy(hostOutput, deviceOutput, inputLength * sizeof(float), cudaMemcpyDeviceToHost);
 	wbSolution(args, hostOutput, inputLength);
 
 	cudaFree(deviceOutput); deviceOutput = NULL;
