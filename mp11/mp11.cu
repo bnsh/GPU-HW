@@ -28,18 +28,36 @@ static void convertFromRGBtoGrayScale(int width, int height, const unsigned char
 	}
 }
 
-static void computeHistogramOfGrayImage(int width, int height, const unsigned char *grayImage, int *histogram) {
+#ifdef SERIAL
+static void computeHistogramOfGrayImage(int width, int height, const unsigned char *grayImage, unsigned int *histogram) {
 // TODO: Parallelize
 	int ii;
 	for (ii = 0; ii < 256; ++ii) histogram[ii] = 0;
 	for (ii = 0; ii < (width*height); ++ii) histogram[grayImage[ii]]++;
 }
+#else
+__global__ void computeHistogramOfGrayImage(int width, int height, const unsigned char *grayImage, unsigned int *histogram) {
+	__shared__ unsigned int private_histo[256];
+	if (threadIdx.x < 256) private_histo[threadIdx.x] = 0;
+	__syncthreads();
+	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	int stride = blockDim.x * gridDim.x;
+	int sz = width * height;
+	while (i < sz) {
+		unsigned int ss = (unsigned int)grayImage[i];
+		atomicAdd(&private_histo[ss], 1);
+		i += stride;
+	}
+	__syncthreads();
+	if (threadIdx.x < 256) atomicAdd(&histogram[threadIdx.x], private_histo[threadIdx.x]);
+}
+#endif
 
 static float prob(int width, int height, int x) {
 	return(((float)x) / (float)(width * height));
 }
 
-static float computeCDFofHistogram(int width, int height, const int *histogram, float *cdf) {
+static float computeCDFofHistogram(int width, int height, const unsigned int *histogram, float *cdf) {
 	int ii;
 	float cdfmin;
 	cdf[0] = prob(width, height, histogram[0]);
@@ -71,6 +89,27 @@ static void castBackToFloat(int width, int height, int channels, const unsigned 
 		outputImage[ii] = (float)(ucharImage[ii] / 255.0);
 }
 
+static void dump(const char *fn, int imageWidth, int imageHeight, const unsigned char *grayImage, const unsigned int *histogram) {
+		FILE *fp = fopen(fn, "w");
+		if (fp) {
+			fprintf(fp, "grayImage = {");
+			for (int i = 0; i < imageWidth*imageHeight; ++i) {
+				if (i) fprintf(fp, ",");
+				fprintf(fp, "\n%d", grayImage[i]);
+			}
+			fprintf(fp, "\n}\n");
+
+			fprintf(fp, "histogram = {");
+			for (int i = 0; i < 256; ++i) {
+				if (i) fprintf(fp, ",");
+				fprintf(fp, "\n%d", histogram[i]);
+			}
+			fprintf(fp, "\n}\n");
+
+			fclose(fp); fp = NULL;
+		}
+}
+
 int main(int argc, char ** argv) {
 	wbArg_t args;
 	int imageWidth;
@@ -83,7 +122,9 @@ int main(int argc, char ** argv) {
 	const char * inputImageFile;
 	unsigned char *ucharImage = NULL;
 	unsigned char *grayImage = NULL;
-	int histogram[HISTOGRAM_LENGTH];
+	unsigned char *devicegrayImage = NULL;
+	unsigned int histogram[HISTOGRAM_LENGTH];
+	unsigned int *devicehistogram = NULL;
 	float cdf[HISTOGRAM_LENGTH];
 	float cdfmin;
 
@@ -103,11 +144,31 @@ int main(int argc, char ** argv) {
 	outputImage = wbImage_new(imageWidth, imageHeight, imageChannels);
 	hostInputImageData = wbImage_getData(inputImage);
 	hostOutputImageData = wbImage_getData(outputImage);
+	cudaMalloc((void **)&devicehistogram, 256 * sizeof(int));
+	cudaMalloc((void **)&devicegrayImage, imageWidth * imageHeight * sizeof(unsigned char));
+	for (int i = 0; i < 256; ++i) histogram[i] = 0;
+	cudaMemcpy(devicehistogram, histogram, 256 * sizeof(int), cudaMemcpyHostToDevice);
 	wbTime_stop(Generic, "Importing data and creating memory on host");
 
 	castFromImageToUnsignedChar(imageWidth, imageHeight, imageChannels, hostInputImageData, ucharImage);
 	convertFromRGBtoGrayScale(imageWidth, imageHeight, ucharImage, grayImage);
+	cudaMemcpy(devicegrayImage, grayImage, imageWidth * imageHeight * sizeof(unsigned char), cudaMemcpyHostToDevice);
+#ifdef SERIAL
+	dump("/tmp/mp11-serial-before.txt", imageWidth, imageHeight, grayImage, histogram);
 	computeHistogramOfGrayImage(imageWidth, imageHeight, grayImage, histogram);
+	dump("/tmp/mp11-serial-after.txt", imageWidth, imageHeight, grayImage, histogram);
+#else
+	dump("/tmp/mp11-gpu-before.txt", imageWidth, imageHeight, grayImage, histogram);
+	int sz = imageWidth * imageHeight;
+	dim3 blocksz(256, 1, 1);
+	dim3 gridsz(((sz-1) / blocksz.x)+1, 1, 1);
+	fprintf(stderr, "     sz = %d\n", sz);
+	fprintf(stderr, "blocksz = { x=%d, y=%d, z=%d }\n", blocksz.x, blocksz.y, blocksz.z);
+	fprintf(stderr, " gridsz = { x=%d, y=%d, z=%d }\n", gridsz.x, gridsz.y, gridsz.z);
+	computeHistogramOfGrayImage<<<gridsz, blocksz>>>(imageWidth, imageHeight, devicegrayImage, devicehistogram);
+	cudaMemcpy(histogram, devicehistogram, 256 * sizeof(int), cudaMemcpyDeviceToHost);
+	dump("/tmp/mp11-gpu-after.txt", imageWidth, imageHeight, grayImage, histogram);
+#endif
 	cdfmin = computeCDFofHistogram(imageWidth, imageHeight, histogram, cdf);
 	applyHistogramEqualization(imageWidth, imageHeight, imageChannels, cdf, cdfmin, ucharImage);
 	castBackToFloat(imageWidth, imageHeight, imageChannels, ucharImage, hostOutputImageData);
@@ -117,6 +178,8 @@ int main(int argc, char ** argv) {
 	wbSolution(args, outputImage);
 
 	//@@ insert code here
+	if (devicegrayImage != NULL) cudaFree(devicegrayImage); devicegrayImage = NULL;
+	if (devicehistogram != NULL) cudaFree(devicehistogram); devicehistogram = NULL;
 	if (grayImage != NULL) free(grayImage); grayImage = NULL;
 	if (ucharImage != NULL) free(ucharImage); ucharImage = NULL;
 

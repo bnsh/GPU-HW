@@ -26,6 +26,7 @@ OBJS=$(CSRCS:C=o) $(NVSRCS:cu=o)
 
 BINS=\
 	mp$(ASSIGNMENT_NUMBER) \
+	mp$(ASSIGNMENT_NUMBER)-serial \
 
 TEST_OUTPUT=$(sort $(wildcard data/*/output.ppm))
 TEST_INPUTS=$(TEST_OUTPUT:output.ppm=input.ppm)
@@ -34,9 +35,11 @@ TEST_ACTUAL=$(TEST_OUTPUT:output.ppm=generated.ppm)
 all: $(OBJS) $(BINS)
 
 clean:
-	/bin/rm -f $(BINS) $(OBJS)
+	/bin/rm -f $(BINS) $(OBJS) mp11-serial.o
 
 test: $(TEST_ACTUAL)
+
+test-serial: $(TEST_ACTUAL:generated.ppm=serial.ppm)
 
 push:
 	/usr/bin/rsync -avz -e ssh --progress --delete $(HOME)/classes/hetero/mp$(ASSIGNMENT_NUMBER)/ som.hex21.com:classes/hetero/mp$(ASSIGNMENT_NUMBER)/
@@ -44,8 +47,17 @@ push:
 mp$(ASSIGNMENT_NUMBER): mp$(ASSIGNMENT_NUMBER).o
 	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
 
+mp$(ASSIGNMENT_NUMBER)-serial: mp$(ASSIGNMENT_NUMBER)-serial.o
+	$(NVCC) $(NVCCFLAGS) $(^) -o $(@) $(NVLIBS)
+
 data/%/generated.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input.ppm
 	./mp$(ASSIGNMENT_NUMBER) -t $(MODE) -i data/$*/input.ppm -e data/$*/output.ppm -o $(@) | /usr/bin/python ../wb/unwb
+
+data/%/serial.ppm: $(OBJS) $(BINS) data/%/output.ppm data/%/input.ppm
+	./mp$(ASSIGNMENT_NUMBER)-serial -t $(MODE) -i data/$*/input.ppm -e data/$*/output.ppm -o $(@) | /usr/bin/python ../wb/unwb
+
+%-serial.o: %.cu
+	$(NVCC) -DSERIAL -c $(NVCCFLAGS) $(INCLUDES) $(^) -o $(@)
 
 %.o: %.cu
 	$(NVCC) -c $(NVCCFLAGS) $(INCLUDES) $(^) -o $(@)
